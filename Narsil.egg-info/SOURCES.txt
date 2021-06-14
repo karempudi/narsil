@@ -1,0 +1,6 @@
+README.md
+setup.py
+Narsil.egg-info/PKG-INFO
+Narsil.egg-info/SOURCES.txt
+Narsil.egg-info/dependency_links.txt
+Narsil.egg-info/top_level.txt
