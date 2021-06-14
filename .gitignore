@@ -2,3 +2,4 @@
 *.py[cod]
 /Narsil.egg-info/
 *.log
+.vscode/
