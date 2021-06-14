@@ -8,4 +8,12 @@ setup(
         license='LICENSE.txt',
         description='The package to work with microscopy data of prokaryotic cells',
         long_description=open('README.md').read(),
+        install_requires=[
+            'numpy',
+            'torch',
+            'torchvision',
+            'scikit-image',
+            'scipy',
+            'matplotlib'
+            ]
         )
