@@ -148,7 +148,8 @@ class trainNet(object):
 
 
 
-def testNet(modelPath, phaseDir, saveDir, threshold, device = 'cuda:1', fileformat ='.tiff'):
+def testNet(modelPath, phaseDir, saveDir, transforms,
+	threshold = None, device = 'cuda:1', fileformat ='.tiff'):
 	
 	savedModel = torch.load(modelPath)
 	if savedModel['modelParameters']['netType'] == 'big':
@@ -158,13 +159,13 @@ def testNet(modelPath, phaseDir, saveDir, threshold, device = 'cuda:1', fileform
 
 	device = torch.device(device if torch.cuda.is_available() else "cpu")
 
-	resizing = resizeOneImage((1040, 2048), (1040, 2048))
+	#resizing = resizeOneImage((1040, 2048), (1040, 2048))
 	#resizing = resizeOneImage((2048, 4096), (1024, 2048))
-	tensorizing = tensorizeOneImage(1)
+	#tensorizing = tensorizeOneImage(1)
 
-	transform = transforms.Compose([resizing, tensorizing])
+	#transform = transforms.Compose([resizing, tensorizing])
 
-	motherMachineDataset = phaseTestDir(phaseDir, transform=transform, phase_fileformat=fileformat,
+	motherMachineDataset = phaseTestDir(phaseDir, transform=transforms, phase_fileformat=fileformat,
 				addNoise=False, flip=False)
 
 	motherMachineDataLoader = DataLoader(motherMachineDataset, batch_size=1, shuffle=False, num_workers=6)
@@ -190,7 +191,10 @@ def testNet(modelPath, phaseDir, saveDir, threshold, device = 'cuda:1', fileform
 			mask_pred = torch.sigmoid(mask_pred)
 
 			#mask_pred = torch.sigmoid(mask_pred)
-			mask_pred = mask_pred.to("cpu").numpy().squeeze(0).squeeze(0) >= 0.975
+			if threshold != None:
+				mask_pred = mask_pred.to("cpu").numpy().squeeze(0).squeeze(0) >= threshold
+			else:
+				mask_pred = mask_pred.to("cpu").numpy().squeeze(0).squeeze(0) 
 
 			phase_save = phase.to("cpu").numpy().squeeze(0).squeeze(0)
 
