@@ -138,58 +138,40 @@ class addnoise(object):
 
         return sample
 
-class WeightedUnetLoss(nn.Module):
-    """
-    Custom loss function, for Unet, BCE + DICE + weighting
-    """
-    def __init__(self):
-        super(WeightedUnetLoss, self).__init__()
-        self.bce_loss = nn.BCELoss()
 
-    def forward(self, output, target, weights):
+class resizeOneImage(object):
 
-        #output_weighted = torch.sigmoid(output) 
+    def __init__(self, imgResizeShape, imgToNetSize):
+        assert isinstance(imgResizeShape, tuple)
+        assert isinstance(imgToNetSize, tuple)
+        self.imgResizeShape = imgResizeShape
+        self.imgToNetSize = imgToNetSize
 
-#        output_weighted = output
-#        output_weighted = torch.sigmoid(output_weighted)
+    def __call__(self, image):
 
-#        output_flat = output_weighted.view(-1)
-#        target_flat = target.view(-1)
-
-
-        #bce_loss = self.bce_loss(output_flat, target_flat)
-        #bce_loss = F.binary_cross_entropy_with_logits(output, target, weight = weights)
-#        bce_loss = F.binary_cross_entropy(output_flat, target_flat)
-#
-#        batch_size = target.shape[0]
-#
-#        output = torch.sigmoid(output)
-#        output_dice = output.view(batch_size, -1)
-#        target_dice = target.view(batch_size, -1)
-#
-#        intersection = (output_dice * target_dice)
-#        dice_per_image = 2. * (intersection.sum(1)) / (output_dice.sum(1) + target_dice.sum(1))
-#
-#        dice_batch_loss = 1 - dice_per_image.sum() / batch_size
-#        print(dice_batch_loss.item(), bce_loss.item())
-        #return 0.5 * bce_loss + dice_batch_loss
-
-        output = output * weights
-
-        output = torch.sigmoid(output)
-
-        batch_size = target.shape[0]
+        height, width = image.shape
+        # check if imageSize is bigger or equal to the 
+        image = np.pad(image, pad_width=((0, self.imgResizeShape[0] - height), (0, self.imgResizeShape[1] - width)), 
+                          mode='constant', constant_values = 0.0)
+        if self.imgResizeShape[0] != self.imgToNetSize[0] or self.imgResizeShape[1] != self.imgToNetSize[1]:
+            # Net size is not same a resized image
+            image = transform.resize(image, self.imgToNetSize, anti_aliasing=True)
+        return image
 
 
-        output_reshaped = output.view(batch_size, -1)
-        target_reshaped = target.view(batch_size, -1)
+class tensorizeOneImage(object):
+    def __init__(self, numUnsqueezes=1):
+        self.numUnsqueezes = numUnsqueezes
+    def __call__(self, phase_image):
+        phase_image = phase_image.astype('float32')
+        if self.numUnsqueezes == 1:
+            return torch.from_numpy(phase_image).unsqueeze(0)
+        elif self.numUnsqueezes == 2:
+            return torch.from_numpy(phase_image).unsqueeze(0).unsqueeze(0)
 
-        bce_loss = F.binary_cross_entropy(output_reshaped, target_reshaped)
-        intersection = (output_reshaped * target_reshaped)
-        dice_per_image = 2. * (intersection.sum(1)) / (output_reshaped.sum(1) + target_reshaped.sum(1))
 
-        dice_batch_loss = 1 - dice_per_image.sum() / batch_size
-        print(dice_batch_loss.item(), bce_loss.item())
-        return 0.5 * bce_loss + 2.5 * dice_batch_loss
-       #return bce_loss
+class stripAxis(object):
+
+    def __call__(self, imageTensor):
+        return imageTensor.to("cpu").detach().numpy().squeeze(0).squeeze(0)
 

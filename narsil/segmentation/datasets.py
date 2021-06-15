@@ -11,7 +11,7 @@ from matplotlib.widgets import Slider, Button, CheckButtons, RadioButtons
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import pathlib
-from utils import resizeOneImage, tensorizeOneImage, stripAxis
+from narsil.utils.transforms import resizeOneImage, tensorizeOneImage, stripAxis
 from torchvision import transforms
 from skimage.transform import resize, rotate
 
