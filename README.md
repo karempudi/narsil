@@ -12,3 +12,21 @@ The secondary goal is to evolve this pipeline to be able to work in cooperation 
 The algorithms we use for segmentation and tracking are mainly based on deep learning. The package has functions to help train your own networks as well as run ours.
 
 The advent of mother-machine like devices in microbiology promotes the need for standardization of analysis tools i.e., make things like segmenting a tiff stack, or tracking cells in a tiff stack as easy as possible.
+
+
+### To install the package
+
+First clone the repository and run the following commands.
+
+```
+pip install .
+```
+or
+
+```
+python3 setup.py install
+```
+
+### Package structure
+
+

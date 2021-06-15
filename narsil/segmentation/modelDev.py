@@ -148,7 +148,7 @@ class trainNet(object):
 
 
 
-def test(modelPath, phaseDir, saveDir, threshold, device = 'cuda:1', fileformat ='.tiff'):
+def testNet(modelPath, phaseDir, saveDir, threshold, device = 'cuda:1', fileformat ='.tiff'):
 	
 	savedModel = torch.load(modelPath)
 	if savedModel['modelParameters']['netType'] == 'big':
