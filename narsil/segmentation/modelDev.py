@@ -13,7 +13,7 @@ from skimage import measure, img_as_ubyte
 from skimage.morphology import binary_dilation
 from skimage.io import imread, imsave
 from narsil.utils.transforms import  resizeOneImage, tensorizeOneImage
-from narsil.utils.losses import WeightedUnetLoss, UnetLoss
+from narsil.utils.losses import WeightedUnetLoss, UnetLoss, WeightedUnetLossExact
 from .datasets import mmDataMultiSpecies, phaseFolder, phaseTestDir
 from .network import basicUnet, smallerUnet 
 
@@ -72,7 +72,8 @@ class trainNet(object):
 
 	def initializeLossFunction(self):
 		#self.lossFunction = nn.BCELoss()
-		self.lossFunction = WeightedUnetLoss()
+		#self.lossFunction = WeightedUnetLoss()
+		self.lossFunction = WeightedUnetLossExact()
 
 		print("Loss function initialized successfully ...")
 
