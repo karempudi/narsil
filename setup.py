@@ -14,6 +14,7 @@ setup(
             'torchvision',
             'scikit-image',
             'scipy',
-            'matplotlib'
+            'matplotlib',
+            'wxPython'
             ]
         )
