@@ -169,7 +169,7 @@ def testNet(modelPath, phaseDir, saveDir, transforms,
 	motherMachineDataset = phaseTestDir(phaseDir, transform=transforms, phase_fileformat=fileformat,
 				addNoise=False, flip=False)
 
-	motherMachineDataLoader = DataLoader(motherMachineDataset, batch_size=1, shuffle=False, num_workers=6)
+	motherMachineDataLoader = DataLoader(motherMachineDataset, batch_size=1, shuffle=True, num_workers=6)
 
 	net.load_state_dict(savedModel['model_state_dict'])
 	net.to(device)

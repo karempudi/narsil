@@ -62,10 +62,12 @@ class WeightedUnetLossExact(nn.Module):
 
 		# weighted cross entropy function
 
-		weights_reshaped = weights.view(batch_size, -1) 
-		bce_loss = F.binary_cross_entropy(output_reshaped, target_reshaped)
-		print(dice_batch_loss.item(), bce_loss.item())
-		return dice_batch_loss 
+		weights_reshaped = weights.view(batch_size, -1)  + 1.0
+		bce_loss = weights_reshaped * F.binary_cross_entropy(output_reshaped, target_reshaped, reduction='none')
+
+		weighted_entropy_loss = bce_loss.mean()		
+		print(dice_batch_loss.item(), weighted_entropy_loss.item())
+		return dice_batch_loss  + 0.5 * weighted_entropy_loss
 
 
 
