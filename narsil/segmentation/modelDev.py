@@ -150,7 +150,8 @@ class trainNet(object):
 
 
 def testNet(modelPath, phaseDir, saveDir, transforms,
-	threshold = None, device = 'cuda:1', fileformat ='.tiff'):
+	threshold = None, device = 'cuda:1', fileformat ='.tiff', 
+	plotContours='False', contoursThreshold=0.9):
 	
 	savedModel = torch.load(modelPath)
 	if savedModel['modelParameters']['netType'] == 'big':
@@ -199,18 +200,20 @@ def testNet(modelPath, phaseDir, saveDir, transforms,
 
 			phase_save = phase.to("cpu").numpy().squeeze(0).squeeze(0)
 
-			plt.figure()
-			plt.imshow(mask_pred)
-			plt.show(block=False)
-#
-#            contours = measure.find_contours(mask_pred, 0.98)
-#            fig, ax = plt.subplots()
-#            ax.imshow(phase_save, cmap= plt.cm.gray)
-#
-#            for contour in contours:
-#                ax.plot(contour[:, 1], contour[:, 0], linewidth=1, color='r')
-#            plt.show()
-	#        print(f"ImageBatch: {i_batch} -- loss: {loss.item()}")
+			if plotContours == False:
+				plt.figure()
+				plt.imshow(mask_pred)
+				plt.show(block=False)
+
+			if plotContours == True:
+				contours = measure.find_contours(mask_pred, contoursThreshold)
+				fig, ax = plt.subplots()
+				ax.imshow(phase_save, cmap= plt.cm.gray)
+
+				for contour in contours:
+					ax.plot(contour[:, 1], contour[:, 0], linewidth=1, color='r')
+				plt.show(block=False)
+#        print(f"ImageBatch: {i_batch} -- loss: {loss.item()}")
 			if saveDir != None:
 				imsave(saveDir + str(i_batch) + '.tif', img_as_ubyte(mask_pred), plugin='tifffile', compress = 6, check_contrast=False)
 	#    print(f"Epoch {epoch+1} Done --- Loss per Image: {epoch_loss/numTrain}")
