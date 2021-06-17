@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torchvision import transforms
 import torchvision
 import torchvision.transforms.functional as TF
+from skimage import transform
 
 class padTo16(object):
 
