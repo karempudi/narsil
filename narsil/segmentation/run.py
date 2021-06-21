@@ -270,3 +270,31 @@ def segmentDirectory(phaseDir, models, segmentationParameters, saveDir=None):
     """
     pass
 
+################################################################
+############ Cutting individual channel stacks #################
+######################### & ####################################
+############### Fluorescent channel Cutting ####################
+################################################################
+
+# cut inidividual channels from one position
+def 
+
+
+
+# Parallelize cutting channels and writing
+def cutChannelsAllPositions(analysisMainDir, positions, cuttingAndWritingParameters):
+    """
+    Function to write and cut individual mother machine channels and write
+    them to appropriate directories, for cell-tracking and growth rate analysis
+    later
+
+    Arguments
+    ---------
+    analysisMain: str
+        Path of the analysis directory containing the segmented images directory
+
+    positions: range object or list
+        Range or list of position numbers to cut
+
+    cuttingAndWritingParameters:
+    """
