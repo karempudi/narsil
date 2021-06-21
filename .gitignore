@@ -3,3 +3,4 @@
 /Narsil.egg-info/
 *.log
 .vscode/
+.ipynb_checkpoints/

@@ -77,3 +77,44 @@ net.save(modelSavePath)
 Saved model has a represenation of what transforms were used to train, what species were used,
 and the optimization and model parameters, so you can look back and compare models for the ones
 that provide better performance.
+
+
+
+#### Different Modules in the segmentation sub-package
+
+
+#### Running segmentation on one directory containing .tiff files
+
+Directory structure:
+
+
+```
+segmentationParameters = {
+    'device': "cuda:1",
+    'fileformat' : ".tiff",
+    'batch_size': 1,
+    'segmentationThreshold': 0.9,
+    'flipPositions': range(201, 230),
+    'phasePreset': 'phaseFast',
+    'addNoise': False,
+    'getChannelLocations': True,
+    'channelSegThreshold': 0.8,
+    'numChannels': 16,
+    'dilateAfterSeg': True,
+    'saveSeg': True,
+    'savePhase': False,
+    'backgroundArtifactClean': False,
+    'minBackgroundOnPhase': 32000,
+    'channelCuttingParameters' : {
+        'channel_min': 300,
+        'channel_max': 700,
+        'channel_sum': 300,
+        'histPeaksDistance': 35,
+        'minBarcodeDistance': 80,
+        'firstBarcodeIndex', 10,
+        'numChannels': 16,
+    }
+}
+```
+
+
