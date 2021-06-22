@@ -99,6 +99,7 @@ class singleChannelFishData(object):
             return None
         else:
             return self.fishImages[channel]
+
     def plot(self, channel):
         fig, ax = plt.subplots(nrows = 1, ncols = 1)
         ax.imshow(self.fishImages[channel], cmap='gray')
@@ -107,6 +108,7 @@ class singleChannelFishData(object):
                 ax.add_patch(Rectangle(*box, linewidth = 1, edgecolor='r', facecolor ='none'))
         ax.set_title(f'{channel} Image ')
         plt.show()
+
     # This will count the number of channels in which the boxes are drawn 
     # around the fluor pixels in the images.
     def getNumberFluorChannels(self):
@@ -115,6 +117,7 @@ class singleChannelFishData(object):
             if len(self.fishBoxes[channel]) > 0:
                 numberChannels += 1
         return numberChannels
+
     def getFluorChannels(self):
         fluorChannels = []
         for channel in self.channelNames:
@@ -135,6 +138,41 @@ class singleChannelFishData(object):
 
 
 class singlePositionFishData(object):
+    """
+    Class for holding fluorescent image of one position and also helps in 
+    a background subtraction and extraction of individual channels from 
+    channel locations
+
+    """
     
-    def __init__(self):
+    def __init__(self, fishDir, channelNames, locations, 
+            channelWidth=40, imgName='img_000000000', fileformat='.tiff'):
+        self.fishDir = fishDir
+        self.channelNames = channelNames
+        self.locations = locations #locations of the mother machine channels
+        self.channelWidth = channelWidth
+        self.fileformat = fileformat
+        self.fishImages = {}
+
+        # set images
+        for channel in self.channelNames:
+            image = imread(fishDir + '/' + str(channel) + '/' + imgName + self.fileformat, as_gray=True)
+            self.fishImages[channel] = image
+
+    def __len__(self):
+        return len(self.channelNames)
+    
+    def __getitem__(self, channel):
+        if channel not in self.channelNames:
+            return None
+        else:
+            return self.fishImages[channel]
+    
+    def generateBboxes(self):
+        pass
+    
+    def subtractBackground(self):
+        pass
+
+    def plotChannel(self, channel, withBboxes=True):
         pass
