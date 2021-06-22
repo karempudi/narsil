@@ -12,7 +12,7 @@ from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 from scipy.ndimage.morphology import binary_dilation
 from scipy.signal import find_peaks
-from skiamge.io import imread, imsave
+from skimage.io import imread, imsave
 from skimage.transform import resize, rotate
 from skimage.exposure import equalize_adapthist
 from collections import OrderedDict
@@ -80,7 +80,7 @@ def segmentPosDirectory(positionPhaseDir, segCellNet, channelNet, segmentationPa
             phase_test = data_test['phase'].to(device)
             filename_to_save = data_test['phase_filename'][0].split('.')[0].split('/')[-1]
             #print(filename_to_save)
-            mask_pred = net(phase_test) > segmentationParameters['segmentationThreshold']
+            mask_pred = segCellNet(phase_test) > segmentationParameters['segmentationThreshold']
 
             # Grab the channel locations and write them to the dictionary
             if segmentationParameters['getChannelLocations'] and channelCuttingFailed == False:
@@ -148,7 +148,7 @@ def getChannelLocationSingleImage(channel_pred, channelCuttingParameters):
     #print(possible_barcode_locations)
     numChannels = channelCuttingParameters['numChannels']
     before_barcode_locations = np.zeros((numChannels,), dtype=int)
-    after_barcode_locations = np.zeros((numChannles,), dtype=int)
+    after_barcode_locations = np.zeros((numChannels,), dtype=int)
 
     for i in range(numChannels):
         before_barcode_locations[i] = peaks[possible_barcode_locations-i]
@@ -204,7 +204,8 @@ def loadNet(modelPath, device):
 
 
 def segmentAllPositions(phaseMainDir, positions, models, segmentationParameters):
-    """ Function to segment position ranges given to the function
+    """ 
+    Function to segment position ranges given to the function
 
     Arguments
     ---------
@@ -241,7 +242,7 @@ def segmentAllPositions(phaseMainDir, positions, models, segmentationParameters)
 
     channelNet  = smallerUnet(transposeConv=True)
     channel_saved_net_state = torch.laod(models['channels'])
-    channelNet.load_state_dict(channel_saved_net_state['model_state_dict']
+    channelNet.load_state_dict(channel_saved_net_state['model_state_dict'])
     channelNet.to(device)
     channelNet.eval()
     print("Channel Segmentation Network loaded successfully ... ")
@@ -265,10 +266,11 @@ def segmentAllPositions(phaseMainDir, positions, models, segmentationParameters)
 
 def segmentDirectory(phaseDir, models, segmentationParameters, saveDir=None):
     """
-    Function to segment a pure directory containing .tiff files
+    Function to segment a pure directory containing .tiff files. 
+    You can use this to plot overlays as well.
 
     """
-    pass
+    return
 
 ################################################################
 ############ Cutting individual channel stacks #################
@@ -277,12 +279,45 @@ def segmentDirectory(phaseDir, models, segmentationParameters, saveDir=None):
 ################################################################
 
 # cut inidividual channels from one position
-def 
+def cutChannelsOnePosition(analysisPosDir, channelLocations, cuttingAndWritingParameters,
+                 segmentedFileFormat='.tiff'):
+    """
+    Funciton to write and cut individual mother machine channels and write them for one
+    position (which is a stack of images)
+    """
+    positionNumber = int(analysisPosDir.split('/')[-2][3:])
+
+    # Directory where segmented images live, filenames are same as the raw data images
+    segmentedPhaseDir = analysisPosDir + 'segmentedPhase/'
+    
+    blobsWriteDir = analysisPosDir + 'blobs/'
+    channelWidth = cuttingAndWritingParameters['channelWidth']
+
+    for i, filename in enumerate(channelLocations[positionNumber], 0):
+        if (i >= cuttingAndWritingParameters['cutUntilFrames']):
+            return True
+        
+        imageFilename = segmentedPhaseDir + filename + segmentedFileFormat
+        image = imread(imageFilename)
+
+        peaks = channelLocations[positionNumber][filename]
+        left = peaks - (channelWidth//2)
+        right = peaks + (channelWidth//2)
+        channelLimits = list(zip(left, right))
+
+        for l in range(len(channelLimits)):
+            if not os.path.exists(blobsWriteDir + str(l)):
+                os.makedirs(blobsWriteDir + str(l))
+            imgChop = image[:, channelLimits[l][0]: channelLimits[l][1]] * 255
+            imsave(blobsWriteDir + str(l) + '/' + str(i) + segmentedFileFormat, imgChop, plugin='tifffile', compress=6)
+        
+    return False
 
 
 
 # Parallelize cutting channels and writing
-def cutChannelsAllPositions(analysisMainDir, positions, cuttingAndWritingParameters):
+def cutChannelsAllPositions(analysisMainDir, positions, cuttingAndWritingParameters,
+        numProcesses=6):
     """
     Function to write and cut individual mother machine channels and write
     them to appropriate directories, for cell-tracking and growth rate analysis
@@ -296,5 +331,44 @@ def cutChannelsAllPositions(analysisMainDir, positions, cuttingAndWritingParamet
     positions: range object or list
         Range or list of position numbers to cut
 
-    cuttingAndWritingParameters:
+    cuttingAndWritingParameters: dict
+        Dictionary containing parameters used in channel cutting
+
+    numProcesses: int
+        Number of processes you want to parallelize on
+
+    Returns
+    -------
+    None
     """
+    start = time.time()
+
+    channelLocationsFile = cuttingAndWritingParameters['saveResultsDir'] + 'channelLocations.npy'
+
+    channelLocations = np.load(channelLocationsFile, allow_pickle=True).item()
+
+    listPositionDirs = []
+    for position in positions:
+        if position not in channelLocations or len(channelLocations[position]) == 0:
+            print(f"Skipping Pos{position} due to bad channel cutting ... ")
+        else:
+            listPositionDirs.append(analysisMainDir + 'Pos' + str(position) + '/')
+
+    print(listPositionDirs)
+
+    try:
+        mp.set_spawn_method("spawn")
+    except RuntimeError:
+        pass
+    
+    pool = mp.Pool(processes=numProcesses)
+    pool.map(partial(cutChannelsOnePosition, channelLocations=channelLocations, cuttingAndWritingParameters=cuttingAndWritingParameters), listPositionDirs)
+    pool.close()
+    pool.join()
+
+    duration = time.time() - start
+    print(f"Duration of cutting channels of {positions} is {duration}s")
+
+    return None
+
+
