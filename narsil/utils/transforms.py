@@ -156,7 +156,7 @@ class resizeOneImage(object):
                           mode='constant', constant_values = 0.0)
         if self.imgResizeShape[0] != self.imgToNetSize[0] or self.imgResizeShape[1] != self.imgToNetSize[1]:
             # Net size is not same a resized image
-            image = transform.resize(image, self.imgToNetSize, anti_aliasing=True)
+            image = transform.resize(image, self.imgToNetSize, anti_aliasing=True, preserve_range=True)
         return image
 
 

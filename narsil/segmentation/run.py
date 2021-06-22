@@ -371,4 +371,79 @@ def cutChannelsAllPositions(analysisMainDir, positions, cuttingAndWritingParamet
 
     return None
 
+###################################################################
+################# Fluorescent cutting functions ###################
+###################################################################
+
+def cutFluorOnePosition(fluorPositionDir, channelLocations, fluorParameters):
+    
+    channelNames = fluorParameters['channelNames']
+    positionNumber = int(fluorPositionDir.split('/')[-2][3:])
+    channelWidth = fluorParameters['channelWidth']
+    fluorTransform = fluorParameters['transform'] 
+
+    writeDirectory = fluorParameters['saveResultsDir'] + 'Pos' + str(positionNumber) + '/fishChannels/'
+
+    for channelName in channelNames:
+
+        channelImageFileName = fluorPositionDir + channelName + '/' + fluorParameters['fluorImageName'] + '.tiff'
+        channelImage = imread(channelImageFileName, as_gray=True)
+
+        height, width = channelImage.shape
+        if positionNumber in fluorParameters['flipPositions']:
+            channelImage = rotate(channelImage, angle=180, preserve_range=True)
+
+        # Here you can apply the transformations need to clean up the image
+        channelImage = fluorTransform(channelImage)
+        channelImage = channelImage.astype('uint16')
+        if fluorParameters['equalize'] == 'equalize_adapthist':
+            channelImage = (65535 * equalize_adapthist(channelImage))
+
+
+        peaks = channelLocations[positionNumber][fluorParameters['phaseImageToMap']]
+        left = peaks - (channelWidth//2)
+        right = peaks + (channelWidth//2)
+        channelLimits = list(zip(left, right))
+
+        for l in range(len(channelLimits)):
+            if not os.path.exists(writeDirectory + str(l)):
+                os.makedirs(writeDirectory + str(l))
+            imsave(writeDirectory + str(l) + '/' + channelName + '.tiff', channelImage[:, channelLimits[l][0] : channelLimits[l][1]], compress=6)
+
+    print(f"FluorCutting in Pos{positionNumber} Done ..")
+    return None
+
+    
+
+def cutFluorAllPositions(fluorMainDir, positions, fluorParameters, numProcesses=6):
+
+    start = time.time()
+    channelLocationsFilename = fluorParameters['saveResultsDir'] + 'channelLocations.npy'
+    print(f"Reading {channelLocationsFilename} to get locations to cut ... ")
+
+    channelLocations = np.load(channelLocationsFilename, allow_pickle=True).item()
+
+    listPositionDirs = []
+    for position in positions:
+        if (position not in channelLocations) or len(channelLocations[position]) == 0:
+            print(f"Skipping Pos{position} flour cutting due to bad channel detection ...")
+        else:
+            listPositionDirs.append(fluorMainDir + 'Pos' + str(position) + '/')
+    print(listPositionDirs)
+
+    try:
+        mp.set_spawn_method("spawn")
+    except RuntimeError:
+        pass
+
+    pool = mp.Pool(processes=numProcesses)
+    pool.map(partial(cutFluorOnePosition, channelLocations=channelLocations, fluorParameters=fluorParameters), listPositionDirs)
+    pool.close()
+    pool.join()
+
+    duration = time.time() - start
+    print(f"Duration of cutting Fluorescent channels of {positions} is {duration}s")
+
+    return None
+ 
 
