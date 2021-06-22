@@ -146,6 +146,14 @@ class trainNet(object):
 
 	def plotLosses(self):
 		plt.figure()
+		epochs = range(1, self.optimizationParameters['nEpochs'] + 1)
+		plt.plot(epochs, self.losses_train, label='Train')
+		plt.plot(epochs, self.losses_validation, label='Validation')
+		plt.legend()
+		plt.xlabel('Epochs')
+		plt.ylim([0.1, 0.4])
+		plt.ylabel("Dice loss + 0.5 * Weighted BCE loss")
+		plt.title("Covergence of the network")
 		plt.show()
 		
 
