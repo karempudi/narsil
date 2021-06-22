@@ -10,7 +10,8 @@ from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 from skimage import transform
 from skimage import measure, img_as_ubyte
-from skimage.morphology import binary_dilation
+from skimage.morphology import binary_dilation, remove_small_objects, remove_small_holes
+from skimage.measure import label, regionprops
 from skimage.io import imread, imsave
 from narsil.utils.transforms import  resizeOneImage, tensorizeOneImage
 from narsil.utils.losses import WeightedUnetLoss, UnetLoss, WeightedUnetLossExact
@@ -186,7 +187,8 @@ class trainNet(object):
 
 def testNet(modelPath, phaseDir, saveDir, transforms,
 	threshold = None, device = 'cuda:1', fileformat ='.tiff', 
-	plotContours='False', contoursThreshold=0.9):
+	plotContours='False', contoursThreshold=0.9, removeSmallObjects=False,
+	addNoise =False):
 	
 	savedModel = torch.load(modelPath)
 	if savedModel['modelParameters']['netType'] == 'big':
@@ -203,7 +205,7 @@ def testNet(modelPath, phaseDir, saveDir, transforms,
 	#transform = transforms.Compose([resizing, tensorizing])
 
 	motherMachineDataset = phaseTestDir(phaseDir, transform=transforms, phase_fileformat=fileformat,
-				addNoise=False, flip=False)
+				addNoise=addNoise, flip=False)
 
 	motherMachineDataLoader = DataLoader(motherMachineDataset, batch_size=1, shuffle=True, num_workers=6)
 
@@ -230,6 +232,11 @@ def testNet(modelPath, phaseDir, saveDir, transforms,
 			#mask_pred = torch.sigmoid(mask_pred)
 			if threshold != None:
 				mask_pred = mask_pred.to("cpu").numpy().squeeze(0).squeeze(0) >= threshold
+				if removeSmallObjects == True:
+					mask_pred_labeled = label(mask_pred)
+					mask_cleaned = remove_small_objects(mask_pred_labeled, min_size=100)
+					mask_cleaned = remove_small_holes(mask_cleaned > 0, area_threshold=30)
+					mask_pred = mask_cleaned	
 			else:
 				mask_pred = mask_pred.to("cpu").numpy().squeeze(0).squeeze(0) 
 

@@ -5,14 +5,14 @@ import numpy as np
 from collections import OrderedDict
 from skimage.measure import regionprops, label
 from skimage.io import imread
-from skimage.transform impor resize
+from skimage.transform import resize
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from scipy.optimize import curve_fit
 from narsil.utils.growth import exp_growth_fit
 from narsil.utils.transforms import singleBlobTensorize
-from narsil.tracking.datasets import oneCellLineage
 from narsil.fish.datasets import singleChannelFishData
+from torch.utils.data import Dataset, DataLoader
 
 np.seterr(over='ignore')
 
@@ -222,10 +222,11 @@ class oneCellLineage(object):
         plt.ylim(*ylim)
         plt.show()
 
-	def getWritableData(self):
-		# Pacakge the useful data from the track in a correct format, for compression 
-		# and saving and reloading.
-		pass
+    def getWritableData(self):
+        # Pacakge the useful data from the track in a correct format, for compression 
+        # and saving and reloading.
+        return
+
 
 
 
@@ -271,7 +272,7 @@ class singleChannelTrackingSiamese(Dataset):
 
         for i in range(self.nImages):
             filename = self.dirName + str(self.fileindices[i]) + self.fileformat
-            image = io.imread(filename) 
+            image = imread(filename) 
             props = regionprops(label(image))
             self.filenames.append(filename)
             self.nBlobsPerImage.append(len(props))
