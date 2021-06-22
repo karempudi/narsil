@@ -4,12 +4,13 @@ import torch.nn.functional as F
 import numpy as np
 import glob
 import os
-from narsil.tracking.network import siameseNet
 from skimage.io import imread
 from skimage.measure import label, regionprops
 from skimage.filters import threshold_otsu
 from scipy.ndimage import gaussian_filter
 from narsil.utils.growth import exp_growth_fit
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 class singleChannelFishData(object):
 	"""
@@ -25,7 +26,6 @@ class singleChannelFishData(object):
                    mean-std-normalization
     
     """
-
     def __init__(self, fishDirName, channelNames, channelSize = (60, 750), minboxHeight = 90, transforms = None, 
                     fluorChThreshold = None, stdThreshold = 1.0, fileFormat = '.tiff',
                     backgroundFishData = None):
@@ -94,13 +94,11 @@ class singleChannelFishData(object):
 
     def __len__(self):
         return len(self.channelNames)
-
     def __getitem__(self, channel):
         if channel not in self.channelNames:
             return None
         else:
             return self.fishImages[channel]
-
     def plot(self, channel):
         fig, ax = plt.subplots(nrows = 1, ncols = 1)
         ax.imshow(self.fishImages[channel], cmap='gray')
@@ -109,7 +107,6 @@ class singleChannelFishData(object):
                 ax.add_patch(Rectangle(*box, linewidth = 1, edgecolor='r', facecolor ='none'))
         ax.set_title(f'{channel} Image ')
         plt.show()
-    
     # This will count the number of channels in which the boxes are drawn 
     # around the fluor pixels in the images.
     def getNumberFluorChannels(self):
@@ -118,7 +115,6 @@ class singleChannelFishData(object):
             if len(self.fishBoxes[channel]) > 0:
                 numberChannels += 1
         return numberChannels
-    
     def getFluorChannels(self):
         fluorChannels = []
         for channel in self.channelNames:
@@ -136,3 +132,9 @@ class singleChannelFishData(object):
             ax[i].set(title=channel)
         plt.show(block = False)
         fig.canvas.set_window_title(f"{self.fishDirName}")
+
+
+class singlePositionFishData(object):
+    
+    def __init__(self):
+        pass
