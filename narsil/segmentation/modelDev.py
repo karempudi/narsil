@@ -19,13 +19,17 @@ from .network import basicUnet, smallerUnet
 
 class trainNet(object):
 
-	def __init__(self, dataDir, species, transforms, modelParameters, optimizationParameters):
+	def __init__(self, dataDir, species, transforms, modelParameters, optimizationParameters,
+					validationTransforms=None, validation=True):
 		self.dataDir = dataDir
 		self.species = species
 		self.transforms = transforms
+		self.validation = validation
+		self.validationTransforms = validationTransforms
 
 		self.modelParameters = modelParameters
 		self.optimizationParameters = optimizationParameters
+		
 
 		
 		# device initialization
@@ -50,7 +54,8 @@ class trainNet(object):
 		self.trainDataset = mmDataMultiSpecies(self.dataDir, self.species, self.transforms, datasetType='train',
 									includeWeights=self.modelParameters['includeWeights']) 
 		# on validationDataset, validate on the full image, instead of the crops
-		self.validationDataset = mmDataMultiSpecies(self.dataDir, self.species, transforms=None, datasetType='validation')
+		self.validationDataset = mmDataMultiSpecies(self.dataDir, self.species, transforms=self.validationTransforms,
+								 datasetType='validation', includeWeights=self.modelParameters['includeWeights'])
 
 		# dataLoaders initialization
 		self.trainDataLoader = DataLoader(self.trainDataset, batch_size = self.optimizationParameters['batchSize'],
@@ -91,14 +96,21 @@ class trainNet(object):
 
 	def train(self):
 		print("Training started .... ")
-		self.losses = []
+		self.losses_train = []
+		self.losses_validation = []
 		for epoch in range(self.optimizationParameters['nEpochs']):
-			epochAvgLoss = self.runEpoch(epoch)
-			print(f"Epoch {epoch} done --- {epochAvgLoss}")
-			self.losses.append(epochAvgLoss)
+			epoch_train_loss = self.trainEpoch(epoch)
+			print(f"Training Epoch {epoch + 1} done --- {epoch_train_loss}")
+			self.losses_train.append(epoch_train_loss)
+
+			# validation
+			if self.validation == True:
+				epoch_validation_loss = self.validateEpoch(epoch)
+				self.losses_validation.append(epoch_validation_loss)
+
 			self.scheduler.step()
 
-	def runEpoch(self, epoch):
+	def trainEpoch(self, epoch):
 		epochLoss = 0.0
 		for i_batch, data in enumerate(self.trainDataLoader, 0):
 
@@ -117,10 +129,25 @@ class trainNet(object):
 		
 		# run the model through a validation loop
 		return epochLoss/i_batch
-		
+
+	def validateEpoch(self, epoch):
+		self.net.eval()
+		validation_epoch_loss = 0.0
+		with torch.no_grad():
+			for i_batch, data in enumerate(self.validationDataLoader, 0):
+				phase, mask, weights = data['phase'].to(self.device), data['mask'].to(self.device), data['weights'].to(self.device)
+				mask_pred = self.net(phase)
+				loss_per_image = self.lossFunction(mask_pred, mask, weights)
+				validation_epoch_loss += loss_per_image.item()
+		# reset net back to train mode after evaluating
+		self.net.train()
+		print(f"Validation run of epoch: {epoch} done ...")
+		return validation_epoch_loss/i_batch 
 
 	def plotLosses(self):
-		pass
+		plt.figure()
+		plt.show()
+		
 
 	def plotData(self, idx):
 

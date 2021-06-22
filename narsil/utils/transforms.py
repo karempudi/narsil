@@ -1,3 +1,4 @@
+from matplotlib.pyplot import fill
 import numpy as np
 import math
 import random
@@ -12,7 +13,16 @@ from skimage import transform
 class padTo16(object):
 
     def __call__(self, sample):
-        pass
+        
+        width, height = sample['phase'].size
+        pad_width = 16 - (width % 16) 
+        pad_height = 16 - (height % 16)
+
+        sample['phase'] = TF.pad(sample['phase'], padding=[0, 0, pad_width, pad_height], padding_mode="constant", fill=0)
+        sample['mask'] = TF.pad(sample['mask'], padding=[0, 0, pad_width, pad_height], padding_mode="constant", fill=0)
+        sample['weights'] = TF.pad(sample['weights'], padding=[0, 0, pad_width, pad_height], padding_mode="constant", fill=0)
+
+        return sample
 
 
 class changedtoPIL(object):
@@ -122,7 +132,7 @@ class normalize(object):
         # mask are 255 for True and 0 for false
         sample['mask'] = sample['mask']/255.0
 
-        sample['weights'] += 1.0
+        #sample['weights'] += 1.0
         
 
         return sample
