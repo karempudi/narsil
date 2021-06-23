@@ -145,7 +145,7 @@ class smallerUnet(nn.Module):
         x = self.out(x)
 
 
-        return torch.sigmoid(x)
+        return x # sigmoid is done in the loss function
 
 class up_conv(nn.Module):
     '''

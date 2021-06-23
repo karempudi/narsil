@@ -145,14 +145,14 @@ class trainNet(object):
 		print(f"Validation run of epoch: {epoch} done ...")
 		return validation_epoch_loss/i_batch 
 
-	def plotLosses(self):
+	def plotLosses(self, ylim=[0.1, 0.4]):
 		plt.figure()
 		epochs = range(1, self.optimizationParameters['nEpochs'] + 1)
 		plt.plot(epochs, self.losses_train, label='Train')
 		plt.plot(epochs, self.losses_validation, label='Validation')
 		plt.legend()
 		plt.xlabel('Epochs')
-		plt.ylim([0.1, 0.4])
+		plt.ylim(ylim)
 		plt.ylabel("Dice loss + 0.5 * Weighted BCE loss")
 		plt.title("Covergence of the network")
 		plt.show()
