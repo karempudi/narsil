@@ -117,10 +117,10 @@ def segmentPosDirectory(positionPhaseDir, segCellNet, channelNet, segmentationPa
                 mask_pred = mask_pred > segmentationParameters['segmentationThreshold']
 
             if segmentationParameters['cleanSmallObjects']:
+                mask_pred = remove_small_holes(mask_pred , area_threshold=30)
                 mask_pred_labeled = label(mask_pred)
                 mask_cleaned = remove_small_objects(mask_pred_labeled, min_size=40)
-                mask_cleaned = remove_small_holes(mask_cleaned > 0, area_threshold=30)
-                mask_pred = mask_cleaned
+                mask_pred = mask_cleaned > 0
 
             if segmentationParameters['dilateAfterSeg']:
                 mask_pred = binary_dilation(mask_pred)
