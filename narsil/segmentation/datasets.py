@@ -460,17 +460,21 @@ class mmDataMultiSpecies(object):
         else:
             fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
             data = self.__getitem__(idx)
-            ax1.imshow(data['phase'])
-            ax1.set_xlabel(str(data['phaseFilename']))
-            ax1.set_title('Phase')
+            ax1.imshow(data['phase'].numpy().squeeze(0), cmap='gray')
+            #ax1.set_xlabel(str(data['phaseFilename']))
+            ax1.set_xlabel('Phase')
+            #ax1.set_title('Phase')
 
-            ax2.imshow(data['mask'])
-            ax2.set_xlabel(str(data['maskFilename']))
-            ax2.set_title('mask')
+            ax2.imshow(data['mask'].numpy().squeeze(0), cmap='gray')
+            #ax2.set_xlabel(str(data['maskFilename']))
+            ax2.set_xlabel('Binary mask')
+            #ax2.set_title('mask')
 
-            ax3.imshow(data['weights'])
-            ax3.set_xlabel(str(data['weightFilename']))
-            ax3.set_title('weights')
+            ax3.imshow(data['weights'].numpy().squeeze(0))
+            #ax3.set_xlabel(str(data['weightFilename']))
+            ax3.set_xlabel('Weight map')
+            #ax3.set_title('weights')
+            plt.show()
 
 
 

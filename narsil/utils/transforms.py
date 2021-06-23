@@ -52,6 +52,17 @@ class randomCrop(object):
         sample['weights'] = TF.crop(sample['weights'], i, j, h, w)
         return sample
 
+class randomVerticalFlip(object):
+
+    def __call__(self, sample):
+
+        if random.random() < 0.5:
+            sample['phase'] = TF.vflip(sample['phase'])
+            sample['mask'] = TF.vflip(sample['mask'])
+            sample['weights'] = TF.vflip(sample['weights'])
+
+        return sample
+
 class randomRotation(object):
 
     def __init__(self, rotation_angle):

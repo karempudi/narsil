@@ -234,7 +234,7 @@ def testNet(modelPath, phaseDir, saveDir, transforms,
 				mask_pred = mask_pred.to("cpu").numpy().squeeze(0).squeeze(0) >= threshold
 				if removeSmallObjects == True:
 					mask_pred_labeled = label(mask_pred)
-					mask_cleaned = remove_small_objects(mask_pred_labeled, min_size=100)
+					mask_cleaned = remove_small_objects(mask_pred_labeled, min_size=40)
 					mask_cleaned = remove_small_holes(mask_cleaned > 0, area_threshold=30)
 					mask_pred = mask_cleaned	
 			else:
