@@ -94,7 +94,7 @@ class singleChannelFishData(object):
 
     def __len__(self):
         return len(self.channelNames)
-        plt.show()
+
     def __getitem__(self, channel):
         if channel not in self.channelNames:
             return None

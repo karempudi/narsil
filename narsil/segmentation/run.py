@@ -1,5 +1,6 @@
 # File containing functions that will help in running the segmentation 
 # functions on your dataset
+from scipy import ndimage
 import torch
 import os
 import time
@@ -10,11 +11,13 @@ from narsil.segmentation.datasets import phaseFolder
 from narsil.utils.transforms import resizeOneImage, tensorizeOneImage
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
-from scipy.ndimage.morphology import binary_dilation
+from scipy.ndimage.morphology import binary_dilation, binary_erosion, binary_fill_holes, binary_opening
 from scipy.signal import find_peaks
 from skimage.io import imread, imsave
 from skimage.transform import resize, rotate
 from skimage.exposure import equalize_adapthist
+from skimage.morphology import remove_small_holes, remove_small_objects
+from skimage.measure import label, find_contours
 from collections import OrderedDict
 from functools import partial
 
@@ -56,7 +59,7 @@ def segmentPosDirectory(positionPhaseDir, segCellNet, channelNet, segmentationPa
 
     phaseImageTransform = segmentationParameters['transforms'] 
 
-    device = segmentationParameters['device']
+    device = torch.device(segmentationParameters['device'] if torch.cuda.is_available() else "cpu")
 
     positionNumber = int(positionPhaseDir.split('/')[-2][3:])
     #print(positionNumber)
@@ -80,11 +83,13 @@ def segmentPosDirectory(positionPhaseDir, segCellNet, channelNet, segmentationPa
             phase_test = data_test['phase'].to(device)
             filename_to_save = data_test['phase_filename'][0].split('.')[0].split('/')[-1]
             #print(filename_to_save)
-            mask_pred = segCellNet(phase_test) > segmentationParameters['segmentationThreshold']
+            mask_pred = segCellNet(phase_test) 
+
+            mask_pred = torch.sigmoid(mask_pred)
 
             # Grab the channel locations and write them to the dictionary
             if segmentationParameters['getChannelLocations'] and channelCuttingFailed == False:
-                channel_pred = channelNet(phase_test) > segmentationParameters['channelSegThreshold']
+                channel_pred = torch.sigmoid(channelNet(phase_test)) > segmentationParameters['channelSegThreshold']
                 channel_pred = channel_pred.to("cpu").detach().numpy().squeeze(0).squeeze(0)
                 #print(channel_pred.shape)
                 try:
@@ -99,6 +104,23 @@ def segmentPosDirectory(positionPhaseDir, segCellNet, channelNet, segmentationPa
             #print(f"{filename_to_save} ---> {channel_pred.shape}")
             # TODO: loop over if batch_size > 1
             mask_pred = mask_pred.to("cpu").detach().numpy().squeeze(0).squeeze(0)
+
+            if segmentationParameters['useContourFinding']:
+                mask_contour = np.zeros_like(mask_pred, dtype='bool')
+                contours = find_contours(mask_pred, segmentationParameters['contoursThreshold'])
+                for contour in contours:
+                    mask_contour[np.round(contour[:, 0]).astype('int'), np.round(contour[:, 1]).astype('int')] = 1
+                
+                mask_contour = binary_fill_holes(mask_contour)
+                mask_pred = mask_contour
+            else:
+                mask_pred = mask_pred > segmentationParameters['segmentationThreshold']
+
+            if segmentationParameters['cleanSmallObjects']:
+                mask_pred_labeled = label(mask_pred)
+                mask_cleaned = remove_small_objects(mask_pred_labeled, min_size=40)
+                mask_cleaned = remove_small_holes(mask_cleaned > 0, area_threshold=30)
+                mask_pred = mask_cleaned
 
             if segmentationParameters['dilateAfterSeg']:
                 mask_pred = binary_dilation(mask_pred)
@@ -117,7 +139,8 @@ def segmentPosDirectory(positionPhaseDir, segCellNet, channelNet, segmentationPa
                 segSaveDir = segmentationParameters['saveResultsDir'] + 'Pos' + str(positionNumber) + '/segmentedPhase/'
                 if not os.path.exists(segSaveDir):
                     os.makedirs(segSaveDir)
-                imsave(segSaveDir + filename_to_save + segmentationParameters['fileformat'], mask_pred.astype('float32'), plugin='tifffile', compress=6)
+                imsave(segSaveDir + filename_to_save + segmentationParameters['fileformat'], mask_pred.astype('float32'),
+                    plugin='tifffile', compress=6, check_contrast=False)
             
             if segmentationParameters['savePhase']:
                 phaseSaveDir = segmentationParameters['saveResultsDir'] + 'Pos' + str(positionNumber) + '/processedPhase/'
@@ -237,14 +260,8 @@ def segmentAllPositions(phaseMainDir, positions, models, segmentationParameters)
 
     print("Segmentation Network loaded successfuly ...")
 
-    # Load channel model, it is usually a smaller model, so load it directly
-    # TODO: rebuild and pack model in the same format as cells later
 
-    channelNet  = smallerUnet(transposeConv=True)
-    channel_saved_net_state = torch.laod(models['channels'])
-    channelNet.load_state_dict(channel_saved_net_state['model_state_dict'])
-    channelNet.to(device)
-    channelNet.eval()
+    channelNet  = loadNet(models['channels'], device)
     print("Channel Segmentation Network loaded successfully ... ")
 
     cuttingLocations = {}
@@ -294,7 +311,7 @@ def cutChannelsOnePosition(analysisPosDir, channelLocations, cuttingAndWritingPa
     channelWidth = cuttingAndWritingParameters['channelWidth']
 
     for i, filename in enumerate(channelLocations[positionNumber], 0):
-        if (i >= cuttingAndWritingParameters['cutUntilFrames']):
+        if (i > cuttingAndWritingParameters['cutUntilFrames']):
             return True
         
         imageFilename = segmentedPhaseDir + filename + segmentedFileFormat
@@ -309,7 +326,8 @@ def cutChannelsOnePosition(analysisPosDir, channelLocations, cuttingAndWritingPa
             if not os.path.exists(blobsWriteDir + str(l)):
                 os.makedirs(blobsWriteDir + str(l))
             imgChop = image[:, channelLimits[l][0]: channelLimits[l][1]] * 255
-            imsave(blobsWriteDir + str(l) + '/' + str(i) + segmentedFileFormat, imgChop, plugin='tifffile', compress=6)
+            imsave(blobsWriteDir + str(l) + '/' + str(i) + segmentedFileFormat, imgChop, plugin='tifffile',
+                         compress=6, check_contrast=False)
         
     return False
 
@@ -357,7 +375,7 @@ def cutChannelsAllPositions(analysisMainDir, positions, cuttingAndWritingParamet
     print(listPositionDirs)
 
     try:
-        mp.set_spawn_method("spawn")
+        mp.set_start_method("spawn")
     except RuntimeError:
         pass
     
@@ -432,7 +450,7 @@ def cutFluorAllPositions(fluorMainDir, positions, fluorParameters, numProcesses=
     print(listPositionDirs)
 
     try:
-        mp.set_spawn_method("spawn")
+        mp.set_start_method("spawn")
     except RuntimeError:
         pass
 
