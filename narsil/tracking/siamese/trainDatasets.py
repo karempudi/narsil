@@ -36,11 +36,11 @@ class channelDataset(object):
         return channel_img
 
 
-class siameseDatasetWrapper(object):
+class siameseDatasetWrapper(Dataset):
 
     def __init__(self, data, transforms=None):
         self.data = data
-        self.tranforms = transforms
+        self.transforms = transforms
 
     def __len__(self):
         return len(self.data)
@@ -50,8 +50,8 @@ class siameseDatasetWrapper(object):
             idx = idx.tolist()
         sample = self.data[idx]
 
-        if self.tranforms:
-            sample = self.tranforms(sample)
+        if self.transforms != None:
+            sample = self.transforms(sample)
 
         return sample
 
@@ -76,9 +76,9 @@ class siameseDataset(object):
         self.validationData = []
 
         for directory in self.dirNames:
-            tracksSet = setOfTracksTrain(directory, transforms=self.transforms, fileformat=self.fileformat,
+            tracksSet = setOfTracksTrain(directory, fileformat=self.fileformat,
                                     linksformat=self.linksformat, frameskip=self.frameskip)
-            linksFileName = directory + 'justLinks' + self.linksformat
+            linksFileName = directory + 'justlinks' + self.linksformat
             linksList = np.load(linksFileName).tolist()
             #numberOfFiles = len(tracskSet.indices)
             fileIndices = tracksSet.indices
@@ -141,13 +141,16 @@ class siameseDataset(object):
     def splitData(self, p=0.8):
         trainData = []
         validationData = []
-        for data in self.balancedData:
-            if random.random() >= 1 - p:
-                trainData.append(data)
-            else:
-                validationData.append(data)
+        if self.validation == True:
+            for data in self.balancedData:
+                if random.random() >= 1 - p:
+                    trainData.append(data)
+                else:
+                    validationData.append(data)
+        else:
+            trainData = self.balancedData
         
-        return (trainData, validationData)
+        return trainData, validationData
 
 
     def getLinkedData(self):
@@ -178,9 +181,8 @@ class setOfTracksTrain(Dataset):
 
     TODO: DONT use frameskip option, it is not fully implemented in all functions, in the current structure 
     """
-    def __init__(self, directory, transforms = None, fileformat = '.tiff', linksformat = '.npy',frameskip = 1):
+    def __init__(self, directory, fileformat = '.tiff', linksformat = '.npy',frameskip = 1):
         self.directory = directory
-        self.transforms = transforms
         self.fileformat = fileformat 
         self.frameskip = frameskip
         self.indices = [int(filename.split('/')[-1].split('.')[0]) for filename in glob.glob(self.directory + "*" + self.fileformat)]

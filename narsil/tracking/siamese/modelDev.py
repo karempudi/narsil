@@ -1,5 +1,6 @@
 # Training tracker neural nets
 import numpy as np
+from skimage import transform
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -8,7 +9,7 @@ from narsil.utils.losses import ContrastiveLoss
 
 from torch.utils.data import Dataset, DataLoader
 from narsil.tracking.siamese.network import siameseNet
-from narsil.tracking.siamese.trainDatasets import siameseDatasetWrapper
+from narsil.tracking.siamese.trainDatasets import siameseDatasetWrapper, siameseDataset
 
 class trainNet(object):
 
@@ -40,14 +41,21 @@ class trainNet(object):
 
     def initializeDataset(self):
         # setting dataloaders
-        self.trainingDataset = []
-        self.validationDataset = []
+        siamesedataset = siameseDataset(self.trainingDirs, self.modelParameters['includeDaughters'],
+                                         imgStdSize=(96,32), validation=True, fileformat=self.modelParameters['fileformat'],
+                                         linksformat=self.modelParameters['linksFormat'])
+        trainData, validationData = siamesedataset.splitData()
+        self.trainingDataset = siameseDatasetWrapper(trainData, transforms=self.transforms)
+        self.validationDataset = siameseDatasetWrapper(validationData,transforms=self.transforms) 
 
-        self.trainDataLoader = DataLoader()
-        self.validationDataLoader = DataLoader()
+        self.trainDataLoader = DataLoader(self.trainingDataset, batch_size=self.optimizationParameters['train_batch_size'], shuffle=True, num_workers=6)
+        print("Training DataLoaders initialized ... ")
+        self.validationDataLoader = DataLoader(self.validationDataset, batch_size=self.optimizationParameters['validation_batch_size'], shuffle=True, num_workers=6)
+        print("Validation DataLoaders inititialized ...")
 
     def initializeNet(self):
         self.net = siameseNet(outputFeatureSize=self.modelParameters['outputFeatureSize'])
+        print("Siamese network initialized ... ")
 
     def initializeOptimizer(self):
         self.optimizer = optim.Adam(self.net.parameters(), lr = self.optimizationParameters['learningRate'])
@@ -83,10 +91,10 @@ class trainNet(object):
         epochLoss = 0.0
         for i_batch, data in enumerate(self.trainDataLoader, 0):
 
-            props1, image1, props2, image2, label = data[0]['props'].to(self.device), data[0]['image'].to(self.device), data[1]['props'].to(self.device), data[1]['props'].to(self.device), data[2].to(self.device)
+            props1, image1, props2, image2, label = data[0]['props'].to(self.device), data[0]['image'].to(self.device), data[1]['props'].to(self.device), data[1]['image'].to(self.device), data[2].to(self.device)
             self.optimizer.zero_grad()
             output1, output2 = self.net(props1, image1, props2, image2)
-            loss = self.lossFunction(output1, output2) 
+            loss = self.lossFunction(output1, output2, label) 
 
             epochLoss += loss.item()
             print(f"Epoch : {epoch + 1}, Bundle Batch: {i_batch} -- loss: {loss.item()}")
@@ -102,9 +110,9 @@ class trainNet(object):
         with torch.no_grad():
             for i_batch, data in enumerate(self.validationDataLoader, 0):
 
-                props1, image1, props2, image2, label = data[0]['props'].to(self.device), data[0]['image'].to(self.device), data[1]['props'].to(self.device), data[1]['props'].to(self.device), data[2].to(self.device)
+                props1, image1, props2, image2, label = data[0]['props'].to(self.device), data[0]['image'].to(self.device), data[1]['props'].to(self.device), data[1]['image'].to(self.device), data[2].to(self.device)
                 output1, output2 = self.net(props1, image1, props2, image2)
-                loss_per_batch = self.lossFunction(output1, output2)
+                loss_per_batch = self.lossFunction(output1, output2, label)
                 
                 validation_epoch_loss += loss_per_batch.item()
         # reset net to train mode after evaluating
@@ -125,6 +133,7 @@ class trainNet(object):
 
         transformsUsed = str(self.transforms)
         savedModel = {
+            'trainingDirs': self.trainingDirs,
 			'modelParameters' : self.modelParameters,
 			'optimizationParameters': self.optimizationParameters,
 			'trasnformsUsed' : transformsUsed,

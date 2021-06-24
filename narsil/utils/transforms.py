@@ -197,3 +197,51 @@ class stripAxis(object):
     def __call__(self, imageTensor):
         return imageTensor.to("cpu").detach().numpy().squeeze(0).squeeze(0)
 
+
+# Class that basically tensorizes the siamese databundles
+class imgBundleTensorize(object):
+
+    def __init__(self,  propertiesNormalization = None):
+        self.propertiesNormalization = propertiesNormalization
+
+    def __call__(self, siamBundle):
+        imgBundle1 = siamBundle[0]
+        imgBundle2 = siamBundle[1]
+        linked = siamBundle[2] # True if linked, but we invert it so that it is 0 if they are same
+
+        properties1 = imgBundle1['props']
+        image1 = imgBundle1['image'].astype('float32')
+        properties2 = imgBundle2['props']
+        image2 = imgBundle2['image'].astype('float32')
+        # convert properties and image to tensor
+        if self.propertiesNormalization:
+            properties1 = np.array(properties1).astype('float32') / self.propertiesNormalization
+            properties2 = np.array(properties2).astype('float32') / self.propertiesNormalization
+        else:
+            properties1 = np.array(properties1).astype('float32') 
+            properties2 = np.array(properties2).astype('float32') 
+            
+        return [{'props': torch.from_numpy(properties1),
+                'image' : torch.from_numpy(image1).unsqueeze(0)}, {'props': torch.from_numpy(properties2),
+                'image': torch.from_numpy(image2).unsqueeze(0)} , torch.from_numpy(np.array([int(not linked)], dtype=np.float32))]
+     
+
+class singleBlobTensorize(object):
+
+    def __init__(self,  propertiesNormalization = None):
+        self.propertiesNormalization = propertiesNormalization
+
+    def __call__(self, blobBundle):
+
+        properties = blobBundle['props']
+        image = blobBundle['image'].astype('float32')
+        # convert properties and image to tensor
+        if self.propertiesNormalization:
+            properties = np.array(properties).astype('float32') / self.propertiesNormalization
+        else:
+            properties = np.array(properties).astype('float32')
+        
+        
+        return {'props': torch.from_numpy(properties).unsqueeze(0),
+                'image' : torch.from_numpy(image).unsqueeze(0).unsqueeze(0)}
+
