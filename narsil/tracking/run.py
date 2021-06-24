@@ -140,5 +140,14 @@ def processAllPositions(analysisDir, positions, trackingParameters,
 
 	print(f"Duration of tracking {len(positions)} positions is {duration}s")
 
-def deleteTrackingData():
-	pass
+def deleteTrackingData(analysisDir, positions, dirNameToDelete):
+
+	dirsToDelete = []
+	for position in positions:
+		directory = analysisDir + 'Pos' + str(position) + '/' + dirNameToDelete + '/'
+	
+	for directory in dirsToDelete:
+		try:
+			shutil.rmtree(directory)
+		except:
+			print(f"Eror when deleting {directory} -- probably doesn't exist")
