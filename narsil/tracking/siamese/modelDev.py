@@ -1,12 +1,11 @@
 # Training tracker neural nets
 import numpy as np
-from skimage import transform
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
 from narsil.utils.losses import ContrastiveLoss
-
+from skimage import transform
 from torch.utils.data import Dataset, DataLoader
 from narsil.tracking.siamese.network import siameseNet
 from narsil.tracking.siamese.trainDatasets import siameseDatasetWrapper, siameseDataset
@@ -123,9 +122,17 @@ class trainNet(object):
     def sendToDevice(self):
         self.net.to(self.device)
 
-    def plotLosses(self, ylim=[0, 2.0]):
-        pass
-
+    def plotLosses(self):
+        plt.figure()
+        epochs = range(1, self.optimizationParameters['nEpochs'] + 1)
+        plt.plot(epochs, self.losses_train, label='Train')
+        plt.plot(epochs, self.losses_validation, label='Validation')
+        plt.legend()
+        plt.xlabel('Epochs')
+        plt.ylabel("Contrastive Loss")
+        plt.title("Covergence of the network")
+        plt.show()
+	
     def plotData(self, idx):
         pass
 

@@ -411,4 +411,46 @@ class imgPropBundle(object):
 
         plt.figure()
         plt.imshow(self.__getitem__(idx)['image'])
-        plt.show(block = False)     
+        plt.show(block = False)
+
+class oneSet(Dataset):
+    """ This will  load a set of images for tracking training data
+    One folder containes all the images of a channels.
+    This class holds all the information together and helps in 
+    loading on the GUI
+    """
+
+    def __init__(self, directory, transforms = None, fileformat = '.tiff'):
+
+        self.directory = directory
+        self.fileformat = fileformat
+        self.transforms = transforms
+        self.indices = [int(filename.split('/')[-1].split('.')[0]) for filename in glob.glob(self.directory + "*" + self.fileformat)]
+        self.indices.sort()
+        self.n_timepoints = len(glob.glob(self.directory + "*" + self.fileformat))
+
+    def __len__(self):
+        return self.n_timepoints
+
+    def __str__(self):
+        return 'directory: {self.directory} set'.format(self=self)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        filename = self.directory + str(self.indices[idx]) + self.fileformat
+        #print("Filename: ", filename)
+
+        image = imread(filename, as_gray=True).astype('float32')
+        label_image = label(image)
+        regions = regionprops(label_image)
+        bbox_list = []
+        for prop in regions:
+            bbox_list.append(prop.bbox)
+        
+
+        if self.transforms:
+            image = self.transforms(image)
+
+        return {'filename': filename, 'bbox': bbox_list, 'props': regions}
