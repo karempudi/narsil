@@ -142,7 +142,7 @@ class trainNet(object):
 				validation_epoch_loss += loss_per_image.item()
 		# reset net back to train mode after evaluating
 		self.net.train()
-		print(f"Validation run of epoch: {epoch} done ...")
+		print(f"Validation run of epoch: {epoch + 1} done ...")
 		return validation_epoch_loss/i_batch 
 
 	def plotLosses(self, ylim=[0.1, 0.4]):
