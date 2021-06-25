@@ -1,6 +1,8 @@
 **/__pycache__/
 *.py[cod]
-/Narsil.egg-info/
+/narsil.egg-info/
 *.log
 .vscode/
 .ipynb_checkpoints/
+dist/
+build/
