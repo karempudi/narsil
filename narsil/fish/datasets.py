@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
 class singleChannelFishData(object):
-	"""
+    """
 	Class that bundles the FISH data from all the imaging channels and
 	generate bounding boxes around the signal and also does background
 	subtraction

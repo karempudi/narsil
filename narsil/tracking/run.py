@@ -33,13 +33,16 @@ def evalifyNet(modelPath, device):
 # Main function that processes tracks from one channel and calculated growth rates and species ID
 def processOneChannel(channelDirName, net, bgFishData, trackingParameters):
 
-	device = torch.load(trackingParameters['device'] if torch.cuda.is_available() else "cpu")
+	device = torch.device(trackingParameters['device'] if torch.cuda.is_available() else "cpu")
 	batch_size = trackingParameters['batch_size']
 	fluorChThreshold = trackingParameters['fluorChThreshold']
 	channelSize = trackingParameters['channelSize']
+	minFluorBoxHeight = trackingParameters['minFluorBoxHeight']
+	fishTransforms = trackingParameters['fishTransforms']
 
 	oneChannel = singleChannelTrackingSiamese(channelDirName, trackingParameters=trackingParameters,
-				backgroundFishData=bgFishData, fluorChThreshold=fluorChThreshold, channelSize=channelSize)
+				backgroundFishData=bgFishData, fluorChThreshold=fluorChThreshold, channelSize=channelSize,
+				minFlourBoxHeight=minFluorBoxHeight, fishTransforms=fishTransforms)
 	#print(len(oneChannel))
 	# num_workers = 0 as the number of copies of the net are running at same time at process level
 	# don't change it 
@@ -53,7 +56,7 @@ def processOneChannel(channelDirName, net, bgFishData, trackingParameters):
 	scores = []
 
 	# Run through the net and accumulte the results
-	with torch.no_grad():
+	with torch.no_grad():  
 		for i, data in enumerate(stackdataloader, 0):
 			blob1_props, blob1_image, blob2_props, blob2_image = data[0].to(device), data[1].to(device), data[2].to(device), data[3].to(device)
 			out1, out2 = net(blob1_props, blob1_image, blob2_props, blob2_image)

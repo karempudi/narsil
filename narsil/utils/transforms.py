@@ -242,6 +242,6 @@ class singleBlobTensorize(object):
             properties = np.array(properties).astype('float32')
         
         
-        return {'props': torch.from_numpy(properties).unsqueeze(0),
-                'image' : torch.from_numpy(image).unsqueeze(0).unsqueeze(0)}
+        return {'props': torch.from_numpy(properties),
+                'image' : torch.from_numpy(image).unsqueeze(0)}
 

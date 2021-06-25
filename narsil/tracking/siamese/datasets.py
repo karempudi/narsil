@@ -16,7 +16,7 @@ from torch.utils.data import Dataset, DataLoader
 
 np.seterr(over='ignore')
 
-
+colorMap = {'Klebsiella': 'r', 'E.coli' : 'b', 'Pseudomonas': 'g', 'E.cocci' : 'c'}
 
 class oneCellLineage(object):
     """
@@ -724,7 +724,7 @@ class singleChannelTrackingSiamese(Dataset):
         
         for track in self.tracks:
             if track.species != None:
-                channelGrowth[track.species].append(track.rollingGrowthRate(width=width, fitatleast=fitalteast))
+                channelGrowth[track.species].append(track.rollingGrowthRate(width=width, fitatleast=fitatleast))
 
         for species in channelGrowth:
             channelGrowth[species] = np.asarray(channelGrowth[species])
@@ -886,3 +886,40 @@ class singleChannelTrackingSiamese(Dataset):
                 ax[0].plot([centroid_t_y + frame_t*(width + spacing), centroid_t1_y + (frame_t + 1)*(width + spacing)], [centroid_t_x, centroid_t1_x], color)
         
         plt.show(block=False)
+
+
+
+
+class singleChannelDataset(object):
+    """
+    After segmentation and cutting channels out,
+    this class is useful for loading one stack of images
+    TODO: Add more sophistication if a certain frame needs to be skipped later
+    """
+    def __init__(self, directory, frame_skip = 1,fileformat = '.tiff',transforms=None, labelled=False):
+        
+        self.directory = directory
+        self.n_images = len(glob.glob(directory + "*" + fileformat))
+        self.indices = [int(filename.split('.')[0].split('/')[-1]) for filename in 
+                        glob.glob(directory + "*" + fileformat)]
+        self.indices.sort()
+        self.indices = self.indices[::frame_skip] 
+        self.fileformat = fileformat
+        self.labelled = labelled
+        self.transforms = transforms
+        
+    def __len__(self):
+        return len(self.indices)
+    
+    def __getitem__(self, idx):
+        
+        channel_img_name = self.directory + str(self.indices[idx]) + self.fileformat
+        image = imread(channel_img_name)
+
+        if self.labelled:
+            image = label(image)
+
+        if self.transforms != None:
+            image = self.transforms(image)
+        
+        return image
