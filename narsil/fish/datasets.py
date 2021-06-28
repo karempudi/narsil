@@ -6,11 +6,13 @@ import glob
 import os
 from skimage.io import imread
 from skimage.measure import label, regionprops
+from skimage.transform import rotate
 from skimage.filters import threshold_otsu
 from scipy.ndimage import gaussian_filter
 from narsil.utils.growth import exp_growth_fit
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+from skimage.exposure import equalize_adapthist
 
 class singleChannelFishData(object):
     """
@@ -137,7 +139,6 @@ class singleChannelFishData(object):
         plt.show(block = False)
         fig.canvas.set_window_title(f"{self.fishDirName}")
 
-
 class singlePositionFishData(object):
     """
     Class for holding fluorescent image of one position and also helps in 
@@ -147,34 +148,91 @@ class singlePositionFishData(object):
     """
     
     def __init__(self, fishDir, analysisDir, channelNames, transforms, thresholds,
-            locaitonsImgKey='img_000000030', 
+            phaseImgToMap='img_000000030', flip=False, bgChannelNumber = 15, channelSize=(120, 900),
             channelWidth=40, imgName='img_000000000', fileformat='.tiff'):
         self.fishDir = fishDir
         self.channelNames = channelNames
+        self.channelSize = channelSize
         self.channelWidth = channelWidth
         self.fileformat = fileformat
         self.transforms = transforms
+        self.thresholds = thresholds
+        self.bgChannelNumber = bgChannelNumber
         self.fishImages = {}
+        self.fishEqualizedImages = {}
+        self.flip = flip
+        self.minboxHeight = 50
 
         # set images
         for channel in self.channelNames:
             image = imread(fishDir + '/' + str(channel) + '/' + imgName + self.fileformat, as_gray=True)
             # apply the transforms to match the ones you applied on phase contrast images
+            if self.flip:
+                image = rotate(image, angle=180, preserve_range=True)
             if self.transforms != None:
                 self.fishImages[channel] = self.transforms(image)
+                self.fishEqualizedImages[channel] = self.transforms((65535 * equalize_adapthist(image)))
             else:
                 self.fishImages[channel] = image
+                self.fishEqualizedImages[channel] = (65535 * equalize_adapthist(image))
         
         # grab the locations and isolate channels, load file and read
         locationsFilename = analysisDir + 'channelLocations.npy'
         posiitonNumber = int(self.fishDir.split('/')[-2][3:])
-        locations = np.load(locationFilename, allow_pickle=True).item()
-        self.locations = locations[posiitonNumber][locaitonsImgKey]
+        locations = np.load(locationsFilename, allow_pickle=True).item()
+        self.locations = locations[posiitonNumber][phaseImgToMap]
 
         # cut single channel images and calculate bounding boxes.
+        self.left = self.locations - (self.channelWidth//2)
+        self.right = self.locations + (self.channelWidth//2)
+        channelLimits = list(zip(self.left, self.right))
+
+        # set channel images from equalized images
         self.fishSingleChannels = {}
-        
-        
+
+        for l in range(len(channelLimits)):
+            self.fishSingleChannels[l] = {}
+            for channel in self.channelNames:
+                channelSlice = self.fishEqualizedImages[channel][:, channelLimits[l][0]: channelLimits[l][1]]
+                self.fishSingleChannels[l][channel] = channelSlice
+
+        # calculate bounding boxes
+        self.fishBboxes = {}
+        for channelNumber in self.fishSingleChannels:
+            self.fishBboxes[channelNumber] = {}
+            bgChannelData = self.fishSingleChannels[self.bgChannelNumber]
+            for channel in self.channelNames:
+                self.fishBboxes[channelNumber][channel] = []
+                image = self.fishSingleChannels[channelNumber][channel]
+                image = image - bgChannelData[channel]
+                image = gaussian_filter(image, sigma=2)
+                if np.sum(image) == 0:
+                    self.fishSingleChannels[channelNumber][channel] = bgChannelData[channel]
+                    self.fishBboxes[channelNumber][channel] = []
+                else:
+                    image[:self.channelSize[0], :] = 0
+                    image[self.channelSize[1]:, :] = 0
+
+                    image_bool = image > self.thresholds[channel]
+                    boxes = []
+                    y1 = 6
+                    y2 = image.shape[1] - 3
+                    width = y2 - y1 + 1
+                    xlims_bool = np.sum(image_bool, axis=1) > (width/3)
+                    xlims = np.where(np.diff(xlims_bool) == 1)[0]
+
+                    if len(xlims)%2 == 1 and len(xlims) != 0:
+                        xlims = xlims[:-1]
+                    for i in range(0, len(xlims), 2):
+                        xy = (y1, xlims[i])
+                        height = xlims[i+1] - xlims[i] + 1
+                        if height >= self.minboxHeight:
+                            boxes.append((xy, width, height))
+                    
+                    if len(boxes) != 0:
+                        self.fishBboxes[channelNumber][channel] = boxes
+                    else:
+                        self.fishBboxes[channelNumber][channel] = []
 
     def __len__(self):
         return len(self.channelNames)
@@ -185,15 +243,24 @@ class singlePositionFishData(object):
         else:
             return self.fishImages[channel]
     
-    def generateBboxes(self):
-        pass
 
     def getSingleChannel(self, channelNumber):
         pass
-    
-    def subtractBackground(self):
-        pass
 
     # plots fluorescent image with bboxes found 
-    def plotSingleChannel(self, channel, withBboxes=True):
-        pass
+    def plotSingleChannel(self, channel, color = 'r', withBboxes=True):
+        fig, ax = plt.subplots(nrows=1, ncols=1)
+        ax.imshow(self.fishEqualizedImages[channel], cmap='gray')
+        for channelNumber in self.fishBboxes.keys():
+            # plot the bboxes of i'th channel
+            if len(self.fishBboxes[channelNumber][channel]) != 0:
+                for box in self.fishBboxes[channelNumber][channel]:
+                    ax.add_patch(Rectangle((box[0][0] + self.left[channelNumber], box[0][1]), 
+                            box[1], box[2], linewidth=2, edgecolor = color, facecolor='none'))
+        ax.set(title=channel)
+        plt.show(block=False)
+        fig.canvas.set_window_title(f"{self.fishDir}")
+
+
+
+    

@@ -120,7 +120,9 @@ class randomContrast(object):
     def __call__(self, sample):
         
         if random.random() < self.probability:
-            sample['phase'] = TF.adjust_contrast(sample['phase'], self.contrast_factor)
+            sample['phase'] = TF.adjust_gamma(sample['phase'], self.contrast_factor)
+
+        return sample
 
 class toTensor(object):
 
