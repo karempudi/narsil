@@ -116,16 +116,16 @@ class growthRatesPickles(object):
             if len(noab_column[noab_column != -1]) == 0:
                 pass
             else:
-                noAb_pool_growth[i] = np.mean(noab_column[noab_column != -1]/frameRate)
-                noAb_pool_counts[i] = np.sum(noab_column != -1)
-                noAb_pool_growth_dev[i] = np.std(noab_column[noab_column != -1]/frameRate)
+                noAb_pool_growth[i] = np.mean(noab_column[np.logical_and(noab_column != -1, noab_column >=0)]/frameRate)
+                noAb_pool_counts[i] = np.sum(np.logical_and(noab_column != -1, noab_column >=0))
+                noAb_pool_growth_dev[i] = np.std(noab_column[np.logical_and(noab_column != -1, noab_column >=0)]/frameRate)
             
             if len(ab_column[ab_column != -1]) == 0:
                 pass
             else:
-                Ab_pool_growth[i] = np.mean(ab_column[ab_column != -1]/frameRate)
-                Ab_pool_counts[i] = np.sum(ab_column != -1)
-                Ab_pool_growth_dev[i] = np.std(ab_column[ab_column != -1]/frameRate)
+                Ab_pool_growth[i] = np.mean(ab_column[np.logical_and(ab_column != -1, ab_column >= 0)]/frameRate)
+                Ab_pool_counts[i] = np.sum(np.logical_and(ab_column != -1, ab_column >= 0))
+                Ab_pool_growth_dev[i] = np.std(ab_column[np.logical_and(ab_column != -1, ab_column >= 0)]/frameRate)
         
         self.NoAbCleanPooledGrowthRates = (noAb_pool_growth, noAb_pool_growth_dev, noAb_pool_counts)
         self.AbCleanPooledGrowthRates = (Ab_pool_growth, Ab_pool_growth_dev, Ab_pool_counts)
@@ -144,9 +144,9 @@ class growthRatesPickles(object):
                 if len(column[column != -1]) == 0:
                     pass
                 else:
-                    growth_t_species[i] = np.mean(column[column != -1]/frameRate)
-                    counts_t_species[i] = np.sum(column != -1)
-                    growth_dev_t_species[i]  = np.std(column[column != -1]/frameRate)
+                    growth_t_species[i] = np.mean(column[np.logical_and(column != -1, column >= 0)]/frameRate)
+                    counts_t_species[i] = np.sum(np.logical_and(column != -1, column >=0))
+                    growth_dev_t_species[i]  = np.std(column[np.logical_and(column != -1, column >= 0)]/frameRate)
             
             return growth_t_species, growth_dev_t_species, counts_t_species
         elif ab == True:
@@ -159,9 +159,9 @@ class growthRatesPickles(object):
                 if len(column[column != -1]) == 0:
                     pass
                 else:
-                    growth_t_species[i] = np.mean(column[column != -1]/frameRate)
-                    counts_t_species[i] = np.sum(column != -1)
-                    growth_dev_t_species[i]  = np.std(column[column != -1]/frameRate)
+                    growth_t_species[i] = np.mean(column[np.logical_and(column != -1, column >=0)]/frameRate)
+                    counts_t_species[i] = np.sum(np.logical_and(column != -1, column >=0))
+                    growth_dev_t_species[i]  = np.std(column[np.logical_and(column != -1, column >=0)]/frameRate)
             
             return growth_t_species, growth_dev_t_species, counts_t_species
  
