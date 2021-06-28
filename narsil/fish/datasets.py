@@ -146,19 +146,35 @@ class singlePositionFishData(object):
 
     """
     
-    def __init__(self, fishDir, channelNames, locations, 
+    def __init__(self, fishDir, analysisDir, channelNames, transforms, thresholds,
+            locaitonsImgKey='img_000000030', 
             channelWidth=40, imgName='img_000000000', fileformat='.tiff'):
         self.fishDir = fishDir
         self.channelNames = channelNames
-        self.locations = locations #locations of the mother machine channels
         self.channelWidth = channelWidth
         self.fileformat = fileformat
+        self.transforms = transforms
         self.fishImages = {}
 
         # set images
         for channel in self.channelNames:
             image = imread(fishDir + '/' + str(channel) + '/' + imgName + self.fileformat, as_gray=True)
-            self.fishImages[channel] = image
+            # apply the transforms to match the ones you applied on phase contrast images
+            if self.transforms != None:
+                self.fishImages[channel] = self.transforms(image)
+            else:
+                self.fishImages[channel] = image
+        
+        # grab the locations and isolate channels, load file and read
+        locationsFilename = analysisDir + 'channelLocations.npy'
+        posiitonNumber = int(self.fishDir.split('/')[-2][3:])
+        locations = np.load(locationFilename, allow_pickle=True).item()
+        self.locations = locations[posiitonNumber][locaitonsImgKey]
+
+        # cut single channel images and calculate bounding boxes.
+        self.fishSingleChannels = {}
+        
+        
 
     def __len__(self):
         return len(self.channelNames)
@@ -171,9 +187,13 @@ class singlePositionFishData(object):
     
     def generateBboxes(self):
         pass
+
+    def getSingleChannel(self, channelNumber):
+        pass
     
     def subtractBackground(self):
         pass
 
-    def plotChannel(self, channel, withBboxes=True):
+    # plots fluorescent image with bboxes found 
+    def plotSingleChannel(self, channel, withBboxes=True):
         pass
