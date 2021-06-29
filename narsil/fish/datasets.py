@@ -71,7 +71,7 @@ class singleChannelFishData(object):
                     y1 = 5
                     y2 = image.shape[1] - 5
                     width = y2 - y1 + 1
-                    xlims_bool = np.sum(image_bool, axis=1) > 0
+                    xlims_bool = np.sum(image_bool, axis=1) > (width/3)
                     xlims = np.where(np.diff(xlims_bool) == 1)[0]
                     #print(f"{channel}: --> xlims: {xlims}")
                     if len(xlims)%2 == 1 and len(xlims) != 0:

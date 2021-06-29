@@ -9,6 +9,7 @@ from torchvision import transforms
 import torchvision
 import torchvision.transforms.functional as TF
 from skimage import transform
+from skimage.exposure import adjust_gamma, rescale_intensity
 
 class padTo16(object):
 
@@ -113,14 +114,18 @@ class randomBrightness(object):
 
 class randomContrast(object):
 
-    def __init__(self, contrast_factor, probability):
-        self.contrast_factor = contrast_factor
+    def __init__(self, probability):
         self.probability = probability
     
     def __call__(self, sample):
         
-        if random.random() < self.probability:
-            sample['phase'] = TF.adjust_gamma(sample['phase'], self.contrast_factor)
+        randomfloat = random.random()
+        if randomfloat < self.probability:
+            #print(randomfloat)
+            phase_numpy_image = np.array(sample['phase']).astype('float32')
+            phase_contrast_adjusted = adjust_gamma(phase_numpy_image, gamma=1 + randomfloat)
+            phase_contrast_adjusted = rescale_intensity(phase_contrast_adjusted, in_range='image', out_range='int32')
+            sample['phase'] = TF.to_pil_image(phase_contrast_adjusted)
 
         return sample
 
@@ -141,6 +146,12 @@ class normalize(object):
     def __call__(self, sample):
 
         sample['phase'] = (sample['phase'] - torch.mean(sample['phase']))/torch.std(sample['phase'])
+
+        # trying to just increase the darkness of cells
+        if random.random() < 0.2:
+            indices = sample['phase'] < 1.3
+            sample['phase'][indices] -= 0.5
+
 
         # mask are 255 for True and 0 for false
         sample['mask'] = sample['mask']/255.0
