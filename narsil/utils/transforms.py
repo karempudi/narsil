@@ -241,8 +241,9 @@ class imgBundleTensorize(object):
 
 class singleBlobTensorize(object):
 
-    def __init__(self,  propertiesNormalization = None):
+    def __init__(self,  propertiesNormalization = None, numSqueezes=1):
         self.propertiesNormalization = propertiesNormalization
+        self.numSqueezes = numSqueezes
 
     def __call__(self, blobBundle):
 
@@ -253,8 +254,14 @@ class singleBlobTensorize(object):
             properties = np.array(properties).astype('float32') / self.propertiesNormalization
         else:
             properties = np.array(properties).astype('float32')
+
+        if self.numSqueezes == 1: 
         
-        
-        return {'props': torch.from_numpy(properties),
+            return {'props': torch.from_numpy(properties),
                 'image' : torch.from_numpy(image).unsqueeze(0)}
+        elif self.numSqueezes == 2:
+            return {
+                'props': torch.from_numpy(properties).unsqueeze(0),
+                'image': torch.from_numpy(image).unsqueeze(0).unsqueeze(0)
+            }
 
