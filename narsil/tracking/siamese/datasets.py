@@ -839,7 +839,7 @@ class singleChannelTrackingSiamese(Dataset):
     
 
     def plotTracksUsedForGrowth(self, spacing=0,
-                colorMap={'Klebsiella': 'r', 'E.coli': 'b', 'Pseudomonas': 'g', 'E.cocci' : 'm', 'NoTrack': 'c'}):
+                colorMap={'Klebsiella': 'r', 'E.coli': 'b', 'Pseudomonas': 'g', 'E.cocci' : 'c', 'NoTrack': 'm'}):
 
         if self.fishdata == None:
             print("Fish data is not added")
@@ -869,7 +869,7 @@ class singleChannelTrackingSiamese(Dataset):
         # for each track in the set of tracks start plotting on the image
         for cellLineage in self.tracks:
             species = cellLineage.species
-            if species == None:
+            if species == None or species == "Conflict":
                 color = colorMap['NoTrack']
             else:
                 color = colorMap[species]
@@ -884,7 +884,30 @@ class singleChannelTrackingSiamese(Dataset):
                 centroid_t_x, centroid_t_y = self.properties[frame_t][blob_frame_t]['centroid']
                 centroid_t1_x , centroid_t1_y = self.properties[frame_t1][blob_frame_t1]['centroid']
                 ax[0].plot([centroid_t_y + frame_t*(width + spacing), centroid_t1_y + (frame_t + 1)*(width + spacing)], [centroid_t_x, centroid_t1_x], color)
+
+            if len(cellLineage.daughtersDictionary) == 1:
+                current_frame = trackAndBlobFiles[-1] 
+                next_frame = list(cellLineage.daughtersDictionary.keys())[0]
+                next_frame_number = int(next_frame.split('.')[0].split('/')[-1])
+
+                numDaughters = len(cellLineage.daughtersDictionary[next_frame])
+                mother_blob = cellLineage.fileBlobsDict[current_frame]
+                if numDaughters == 1:
+                    daughter_blob = cellLineage.daughtersDictionary[next_frame][0]
+                    centroid_t_x, centroid_t_y = self.properties[current_frame][mother_blob]['centroid']
+                    centroid_t1_x , centroid_t1_y = self.properties[next_frame_number][daughter_blob]['centroid']
+                    ax[0].plot([centroid_t_y + current_frame*(width + spacing), centroid_t1_y + (current_frame + 1)*(width + spacing)], [centroid_t_x, centroid_t1_x], color)
+                elif numDaughters == 2:
+                    daughter_blob1 = cellLineage.daughtersDictionary[next_frame][0]
+                    daughter_blob2 = cellLineage.daughtersDictionary[next_frame][1]
+                    centroid_t_x, centroid_t_y = self.properties[current_frame][mother_blob]['centroid']
+                    centroid_t1_x1 , centroid_t1_y1 = self.properties[next_frame_number][daughter_blob1]['centroid']
+                    centroid_t1_x2, centroid_t1_y2 = self.properties[next_frame_number][daughter_blob2]['centroid']
+                    ax[0].plot([centroid_t_y + current_frame*(width + spacing), centroid_t1_y1 + (current_frame + 1)*(width + spacing)], [centroid_t_x, centroid_t1_x1], color)
+                    ax[0].plot([centroid_t_y + current_frame*(width + spacing), centroid_t1_y2 + (current_frame + 1)*(width + spacing)], [centroid_t_x, centroid_t1_x2], color)
+
         
+        fig.canvas.set_window_title(f"{self.dirName}")
         plt.show(block=False)
 
 

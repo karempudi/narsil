@@ -185,15 +185,15 @@ class singlePositionFishData(object):
         # cut single channel images and calculate bounding boxes.
         self.left = self.locations - (self.channelWidth//2)
         self.right = self.locations + (self.channelWidth//2)
-        channelLimits = list(zip(self.left, self.right))
+        self.channelLimits = list(zip(self.left, self.right))
 
         # set channel images from equalized images
         self.fishSingleChannels = {}
 
-        for l in range(len(channelLimits)):
+        for l in range(len(self.channelLimits)):
             self.fishSingleChannels[l] = {}
             for channel in self.channelNames:
-                channelSlice = self.fishEqualizedImages[channel][:, channelLimits[l][0]: channelLimits[l][1]]
+                channelSlice = self.fishEqualizedImages[channel][:, self.channelLimits[l][0]: self.channelLimits[l][1]]
                 self.fishSingleChannels[l][channel] = channelSlice
 
         # calculate bounding boxes
@@ -261,6 +261,32 @@ class singlePositionFishData(object):
         plt.show(block=False)
         fig.canvas.set_window_title(f"{self.fishDir}")
 
-
-
     
+    # color are hardcoded, add options later
+    def plotOneMMChannel(self, channelNumber, withBboxes = True, colorMap={
+        'alexa488': 'c', 'cy5': 'r', 'cy3': 'b', 'texasred': 'g'}):
+        fig, ax = plt.subplots(nrows=1, ncols=4)
+        for i, channel in enumerate(self.channelNames,0):
+            channelImg = self.fishEqualizedImages[channel][:, self.channelLimits[channelNumber][0]: self.channelLimits[channelNumber][1]]
+            ax[i].imshow(channelImg, cmap='gray')
+            ax[i].set(title=str(channel))
+            print(self.fishBboxes[channelNumber])
+            if len(self.fishBboxes[channelNumber][channel]) != 0:
+                for box in self.fishBboxes[channelNumber][channel]:
+                    ax[i].add_patch(Rectangle((box[0][0] , box[0][1]), 
+                                box[1], box[2], linewidth=2, edgecolor=colorMap[channel], facecolor='none'))
+            
+        plt.show(block=False)
+
+        fig.canvas.set_window_title(f"{self.fishDir} -- channel No: {channelNumber}")
+
+
+class singleChannelAdapterFISH(object):
+
+    def __init__(self):
+        pass
+
+class singlePositionAdapterFISH(object):
+
+    def __init__(self):
+        pass
