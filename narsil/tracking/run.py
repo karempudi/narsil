@@ -78,8 +78,10 @@ def processOneChannel(channelDirName, net, bgFishData, trackingParameters):
 		oneChannel.setSpeciesForAllTracks()
 
 		localGrowthRates = oneChannel.getGrowthOfSpeciesLabeledTracks()
-		if trackingParameters['plot'] == True:
+		if trackingParameters['plot'] == True and trackingParameters['colorMap'] != None:
 			#oneChannel.plotAllTracksWithFISH()
+			oneChannel.plotTracksUsedForGrowth(colorMap=trackingParameters['colorMap'])
+		elif trackingParameters['plot'] == True and trackingParameters['colorMap'] == None:
 			oneChannel.plotTracksUsedForGrowth()
 
 		if trackingParameters['writeGrowthRates'] == True:
