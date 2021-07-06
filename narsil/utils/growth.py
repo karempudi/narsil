@@ -246,7 +246,8 @@ class growthRatesPickles(object):
 
 
     # ignore is a list of species you can ignore while plotting
-    def plotAllFigures(self, std_err=True, std_dev=True, ignore = [], ylim=1.6):
+    def plotAllFigures(self, std_err=True, std_dev=True, ignore = [], ylim=1.6, speciesFullName = { 'Klebsiella': "K. pneumoniae", 
+        "E.coli": "E.coli", "Pseudomonas": "P.aeruginosa", "E.cocci": "E.faecalis"}):
         nrows = 2
         ncols = 4
         sb.set_style("white")
@@ -285,7 +286,7 @@ class growthRatesPickles(object):
             #            normalized_growth_rates + species_ab[1]/species_noab[0], alpha=0.2, color='r')
             ax[0, i].set_xlim([8, 2*self.nFrames - 2])
             ax[0, i].set_ylim([0, 1.4])
-            ax[0, i].set_title(f"{self.antibioticName} {self.antibioticConc}" + r'$\mu g/ml$ ' + f"{self.speciesTitles[i]}")
+            ax[0, i].set_title(f"{self.antibioticName} {self.antibioticConc}" + r'$\mu g/ml$ ' + f"{speciesFullName[self.speciesNames[i]]}")
             ax[0, i].set_ylabel("Growth Rate (normalized)")
             ax[0, i].set_xlabel("Time(min)")
             ax[0, i].legend(loc='lower left')
@@ -302,7 +303,7 @@ class growthRatesPickles(object):
             normalized_growth_rates = species_ab[0]/species_noab[0]
             species_err_ab = species_ab[1]/species_noab[0]/np.sqrt(species_ab[2])
 
-            ax[1, 0].plot(range(0, 2*self.nFrames, 2), normalized_growth_rates, color=self.colorMap[self.speciesNames[i]], label=self.speciesNames[i])
+            ax[1, 0].plot(range(0, 2*self.nFrames, 2), normalized_growth_rates, color=self.colorMap[self.speciesNames[i]], label=speciesFullName[self.speciesNames[i]])
             ax[1, 0].fill_between(range(0, 2 * self.nFrames, 2), normalized_growth_rates - species_err_ab, normalized_growth_rates + species_err_ab,
                                   alpha = 0.4, color= self.colorMap[self.speciesNames[i]], linestyle='--', linewidth=2)
             
@@ -325,8 +326,8 @@ class growthRatesPickles(object):
             species_noab = self.NoAbCleanGrowthRates[self.speciesNames[i]]
             species_ab = self.AbCleanGrowthRates[self.speciesNames[i]]
 
-            ax[1, 2].plot(range(0, 2 *self.nFrames, 2), species_noab[2], color=self.colorMap[self.speciesNames[i]], label=self.speciesNames[i]+ " Reference")
-            ax[1, 2].plot(range(0, 2 * self.nFrames, 2), species_ab[2], color=self.colorMap[self.speciesNames[i]], linestyle='--', label=self.speciesNames[i] + " Treatment")
+            ax[1, 2].plot(range(0, 2 *self.nFrames, 2), species_noab[2], color=self.colorMap[self.speciesNames[i]], label=speciesFullName[self.speciesNames[i]]+ " Reference")
+            ax[1, 2].plot(range(0, 2 * self.nFrames, 2), species_ab[2], color=self.colorMap[self.speciesNames[i]], linestyle='--', label=speciesFullName[self.speciesNames[i]]+ " Treatment")
         
         ax[1, 2].legend(loc='upper left', fontsize='x-small')
         ax[1, 2].set_xlim([8, 2*self.nFrames -2])
@@ -371,12 +372,12 @@ class growthRatesPickles(object):
 
 
         # plot channel counts to see if the species were loaded equally on both sides
-        labels = self.speciesNames
+        labels = [speciesFullName[species] for species in self.speciesNames]
         noAbCounts = []
         AbCounts = []
-        for label in labels:
-            noAbCounts.append(self.NoAbCounts[label])
-            AbCounts.append(self.AbCounts[label])
+        for species in self.speciesNames:
+            noAbCounts.append(self.NoAbCounts[species])
+            AbCounts.append(self.AbCounts[species])
         
         x = np.arange(len(labels))
         width = 0.35
