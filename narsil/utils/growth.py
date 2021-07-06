@@ -184,7 +184,9 @@ class growthRatesPickles(object):
         pass
 
     # color scheme is a dict of rgb values for each species
-    def plotSpeciesWiseAndPooled(self, colorscheme, ignore = []):
+    def plotSpeciesWiseAndPooled(self, colorscheme, speciesFullName = { 'Klebsiella': "K. pneumoniae", 
+        "E.coli": "E.coli", "Pseudomonas": "P.aeruginosa", "E.cocci": "E.faecalis"},
+        ignore = []):
         sb.set_style("white")
         fig, ax = plt.subplots(nrows=1, ncols=1)
         for i in range(len(self.speciesNames)):
@@ -197,7 +199,7 @@ class growthRatesPickles(object):
             species_err_no_ab = species_noab[1]/species_noab[0]/np.sqrt(species_noab[2])
             species_err_ab = species_ab[1]/species_noab[0]/np.sqrt(species_ab[2])
 
-            ax.plot(range(0, 2*self.nFrames, 2), normalized_growth_rates, color=colorscheme[self.speciesNames[i]], label=self.speciesNames[i]+ ' Treatment')
+            ax.plot(range(0, 2*self.nFrames, 2), normalized_growth_rates, color=colorscheme[self.speciesNames[i]], label=speciesFullName[self.speciesNames[i]]+ ' Treatment')
             ax.fill_between(range(0, 2 * self.nFrames, 2), normalized_growth_rates - species_err_ab, normalized_growth_rates + species_err_ab,
                                   alpha = 0.4, color= colorscheme[self.speciesNames[i]], linestyle='--', linewidth=2)
          
@@ -211,20 +213,20 @@ class growthRatesPickles(object):
         Ab_pool_err = Ab_pool[1]/noAb_pool[0]/np.sqrt(Ab_pool[2])
 
         # Normalized growth rates no antibiotic
-        ax.plot(range(0, 2*self.nFrames, 2), [1] * self.nFrames, 'b-', label='No Species Id Reference')
+        ax.plot(range(0, 2*self.nFrames, 2), [1] * self.nFrames, 'k', label='No Species Id Reference')
 
         # standard error of the normalized values
         ax.fill_between(range(0, 2 * self.nFrames, 2), [1]* self.nFrames - noAb_pool_err, 
-                    [1] * self.nFrames + noAb_pool_err, alpha=0.4, color='b', linestyle='--', linewidth=2)
+                    [1] * self.nFrames + noAb_pool_err, alpha=0.4, color='k', linestyle='--', linewidth=2)
 
         # standard deviation of the normalized values
         #ax[1, 1].fill_between(range(0, 2 * self.nFrames, 2), [1]* self.nFrames - noAb_pool[1]/noAb_pool[0], 
         #            [1] * self.nFrames + noAb_pool[1]/noAb_pool[0], alpha=0.2, color='b')
 
         # normalized growth rates - with antibiotic
-        ax.plot(range(0, 2*self.nFrames, 2), normalized_pool, 'r-', label='No species Id Treatment')
+        ax.plot(range(0, 2*self.nFrames, 2), normalized_pool, 'k:', label='No species Id Treatment')
         ax.fill_between(range(0, 2 * self.nFrames, 2), normalized_pool - Ab_pool_err, 
-                    normalized_pool + Ab_pool_err, alpha=0.4, color='r', linestyle='--', linewidth=2)
+                    normalized_pool + Ab_pool_err, alpha=0.4, color='k', linestyle=':', linewidth=2)
         #ax[1, 1].fill_between(range(0, 2 * self.nFrames, 2), normalized_pool - Ab_pool[1]/noAb_pool[0], 
         #            normalized_pool + Ab_pool[1]/noAb_pool[0], alpha=0.2, color='r')
         ax.set_ylim([0, 1.4])
