@@ -189,12 +189,15 @@ class singlePositionFishData(object):
 
         # set channel images from equalized images
         self.fishSingleChannels = {}
+        self.fishBgSubImages = {}
 
         for l in range(len(self.channelLimits)):
             self.fishSingleChannels[l] = {}
+            self.fishBgSubImages[l] = {}
             for channel in self.channelNames:
                 channelSlice = self.fishEqualizedImages[channel][:, self.channelLimits[l][0]: self.channelLimits[l][1]]
                 self.fishSingleChannels[l][channel] = channelSlice
+                self.fishBgSubImages[l][channel] = channelSlice
 
         # calculate bounding boxes
         self.fishBboxes = {}
@@ -233,6 +236,8 @@ class singlePositionFishData(object):
                         self.fishBboxes[channelNumber][channel] = boxes
                     else:
                         self.fishBboxes[channelNumber][channel] = []
+                self.fishBgSubImages[channelNumber][channel] = image
+                
 
     def __len__(self):
         return len(self.channelNames)
