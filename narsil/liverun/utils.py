@@ -1,6 +1,9 @@
 # Utilites like locked arrays and datastructrues/classes that handle stuff outside
 from torch.utils.data import DataLoader, Dataset, IterableDataset
 import multiprocessing
+import tkinter as tk
+from tkinter import filedialog
+import sys
 
 """
 Gerenric queue for yielding objects from the queue in a safe way to be
@@ -46,4 +49,22 @@ class RNNQueue(IterableDataset):
 		return self.getNextItem()
 	
 def lockedNumpyArray():
+	pass
+
+
+def getPositionFileName():
+	try:
+		while True:
+			root = tk.Tk()
+			root.withdraw()
+			positionFilePath = filedialog.askopenfilename()
+			print(f"Position file path is: {positionFilePath}")
+			return positionFilePath
+
+	except KeyboardInterrupt:
+		print("Keyboard Interrupted during position file setting")
+		sys.exit()
+
+
+def parsePositionsFile():
 	pass

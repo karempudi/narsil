@@ -1,10 +1,9 @@
 # The run file for running the realtime processing
 from matplotlib.pyplot import plot
-from narsil.liverun.processes import analyzer, deadAlive, plotter
 import time
 import torch.multiprocessing as tmp
 import multiprocessing as python_mulitprocessing
-from narsil.liverun.processes import acquisition
+from narsil.liverun.processes import acquisition, segCellsAndChannels, deadAlive, plotter
 
 """
 Set up the queues and start the experiment ...
@@ -36,13 +35,24 @@ def startHeteroExperiment():
 	nprocs = tmp.cpu_count()
 	print(f"Number of CPU cores: {nprocs}")
 
-	acquisitionProcess = tmp.Process()
+	acquisitionProcess = tmp.Process(target=acquisition, 
+							args=(segQueue, imgArrivalQueue, acqShutDownEvent, positionTimeTuple, timeWait),
+							name="Acquisition")
 
-	segAndChannelDetProcess = tmp.Process()
+	segAndChannelDetProcess = tmp.Process(target=segCellsAndChannels,
+							args=(segQueue, segShutDownEvent, imgProcessQueue, channelProcessQueue,
+								  segBatchSize, exptSavePath),
+							name="SegCellsAndChannels")
 
-	deadAliveProcess = tmp.process()
+	deadAliveProcess = tmp.process(target=deadAlive,
+							args=(channelProcessQueue, channelProcessShutDownEvent, exptSavePath, saveOptions,
+								  channeltrackQueue, deadAliveQueue, channelProcessBatchSize),
+							name="DeadAlive")
 
-	plotterProcess = tmp.process()
+	plotterProcess = tmp.process(target=plotter, 
+							args=(imgArrivalQueue, imgProcessQueue, channelTrackQueue, deadAliveQueue,
+								  exptShutDownEvent, positionTimeTuple, numChannels),
+							name="Plotter")
 
 	jobs.append(acquisitionProcess)
 	jobs.append(segAndChannelDetProcess)
