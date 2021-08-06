@@ -14,6 +14,12 @@ def startHeteroExperiment():
 	start = time.time()
 	jobs = []
 
+
+	# Parameters:
+	acquisitionParameters = {
+
+	}	
+
 	# Shutdown event for the acquisition process
 	acqShutDownEvent = tmp.Event()
 
@@ -36,7 +42,7 @@ def startHeteroExperiment():
 	print(f"Number of CPU cores: {nprocs}")
 
 	acquisitionProcess = tmp.Process(target=acquisition, 
-							args=(segQueue, imgArrivalQueue, acqShutDownEvent, positionTimeTuple, timeWait),
+							args=(segQueue, imgArrivalQueue, acqShutDownEvent, acquisitionParameters),
 							name="Acquisition")
 
 	segAndChannelDetProcess = tmp.Process(target=segCellsAndChannels,
