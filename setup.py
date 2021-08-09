@@ -16,7 +16,8 @@ setup(
             'scikit-image',
             'scipy',
             'matplotlib',
-            'wxPython'
+            'wxPython',
+            'psycopg2'
             ],
         packages=find_packages(exclude=("tests", "notebooks",))
         )

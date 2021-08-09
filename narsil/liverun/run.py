@@ -4,6 +4,60 @@ import time
 import torch.multiprocessing as tmp
 import multiprocessing as python_mulitprocessing
 from narsil.liverun.processes import acquisition, segCellsAndChannels, deadAlive, plotter
+import psycopg2 as pg
+import sys
+
+"""
+Initialize the database for the experiment
+"""
+def initializeDatabase(databaseParameters):
+	dbname = databaseParameters['dbname']
+	dbuser = databaseParameters['dbuser']
+	dbpassword = databaseParameters['dbpassword']
+
+	# usually is ['arrival', 'segmented', 'deadAlive']
+	tables = databaseParameters['tables']
+
+	con = None
+
+	try:
+		con = pg.connect(database=dbname, user=dbuser, password=dbpassword)
+		cur = con.cursor()
+
+		# commit to database immediately
+		con.autocommit = True
+		# loop over and check if tables exist and clean them up
+		cur.exeute("""SELECT table_name FROM information_schema.tables
+					WHERE table_schema = 'public'""")
+
+		rows = cur.fetchall()
+		for row in rows:
+    		if row in tables:
+				cur.execute("DROP TABLE IF EXISTS (%s)", (row,))
+		
+		print(f"Clean up all of {tables} to start new experiment ....")
+
+		for table in tables:
+			if table == 'arrival':
+				cur.execute("""CREATE TABLE arrival
+						(id SERIAL PRIMARY KEY, time TIMESTAMP, position INT)
+						""")
+			elif table == 'segmented':
+    			cur.execute("""CREATE TABLE segmented
+						(id SERIAL PRIMARY KEY, time TIMESTAMP, position INT, 
+						segmentedImagePath VARCHAR, rawImagePath VARCHAR, locations BYTEA)
+						""")
+			elif table == 'deadAlive':
+				cur.execute("""CREATE TABLE deadAlive
+						(id SERIAL PRIMARY KEY, time TIMESTAMP, position INT,
+						channelNumber INT, status BYTEA)
+						""")
+
+	except pg.DatabaseError as e:
+		print(f"Error: {e}")
+		sys.exit(1)
+	finally:
+		if con:
 
 """
 Set up the queues and start the experiment ...
@@ -17,8 +71,28 @@ def startHeteroExperiment():
 
 	# Parameters:
 	acquisitionParameters = {
+		"imageSizeParameters": 0
 
 	}	
+
+	segmentationParameters = {
+
+	}
+
+	databaseLoggingParameters = {
+		'dbname': 'Expt number',
+		'dbuser': "postgres",
+		'dbpassword': "password",
+		'tables': ['arrival', 'segmented', 'deadAlive']
+	}
+
+	deadAliveParameters = {
+
+	}
+
+	plottingParameters = {
+
+	}
 
 	# Shutdown event for the acquisition process
 	acqShutDownEvent = tmp.Event()

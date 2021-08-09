@@ -17,6 +17,24 @@ import multiprocessing as mp
 from narsil.liverun.utils import getPositionFileName, parsePositionsFile, phaseTimeSeriesEvents
 import time
 from torchvision import transforms
+import psycopg2 as pg
+
+
+def writeToDatabase(databaseParameters, tableName, data):
+	# create a database connection
+	dbname = databaseParameters['dbname']
+	user = databaseParameters['dbuser']
+	password = databaseParameters['dbpassword']
+
+    if tableName == 'arrival':
+		pass
+
+	elif tableName == 'segmented':
+    	pass
+
+	elif tableName == 'deadAlive':
+    	pass
+
 
 """
 Function that will pipe stuff into the Segmentation queue. 
@@ -91,7 +109,6 @@ def acquisition(segQueue, imgArrivalQueue, acqShutDownEvent, acquisitionParamete
 		except KeyboardInterrupt:
 			acqShutDownEvent.set()
 			print("Acquisition process interrupted using keyboard ... ")
-
 
 
 def plotter():
