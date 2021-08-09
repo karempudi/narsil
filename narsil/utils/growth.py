@@ -189,6 +189,7 @@ class growthRatesPickles(object):
         ignore = []):
         sb.set_style("white")
         fig, ax = plt.subplots(nrows=1, ncols=1)
+        #plt.rcParams['axes.linewidth'] = 1.2
         for i in range(len(self.speciesNames)):
             
             if self.speciesNames[i] in ignore:
@@ -229,19 +230,21 @@ class growthRatesPickles(object):
                     normalized_pool + Ab_pool_err, alpha=0.4, color='k', linestyle=':', linewidth=2)
         #ax[1, 1].fill_between(range(0, 2 * self.nFrames, 2), normalized_pool - Ab_pool[1]/noAb_pool[0], 
         #            normalized_pool + Ab_pool[1]/noAb_pool[0], alpha=0.2, color='r')
-        ax.set_ylim([0, 1.4])
-        ax.set_ylabel("Growth Rate (normalized)")
-        ax.set_xlabel("Time(min)")
-        ax.legend(loc='lower left')
+        #ax.set_ylim([0, 1.4])
+        #ax.set_ylabel("Growth Rate (normalized)")
+        #ax.set_xlabel("Time(min)")
+        #ax.legend(loc='lower left')
 
 
         
         ax.set_xlim([8, 2 * self.nFrames - 2])
-        ax.set_ylabel("Growth Rate (normalized)")
-        ax.set_title(f"{self.antibioticName} {self.antibioticConc}" + r'$\mu g/ml$ ' + " All species")
+        #ax.set_ylabel("Growth Rate (normalized)")
+        #ax.set_title(f"{self.antibioticName} {self.antibioticConc}" + r'$\mu g/ml$ ' + " All species")
+        plt.xticks(fontsize=12, weight='bold')
         ax.set_ylim([0, 1.4])
-        ax.legend(loc='best',fontsize='small',framealpha=0.3)
-        ax.set_xlabel("Time(min)")
+        plt.yticks(fontsize=12, weight='bold')
+        ax.legend(loc='best',fontsize='large',framealpha=0.3)
+        #ax.set_xlabel("Time(min)")
  
 
 
