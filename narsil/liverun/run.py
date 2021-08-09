@@ -32,7 +32,7 @@ def initializeDatabase(databaseParameters):
 
 		rows = cur.fetchall()
 		for row in rows:
-    		if row in tables:
+			if row in tables:
 				cur.execute("DROP TABLE IF EXISTS (%s)", (row,))
 		
 		print(f"Clean up all of {tables} to start new experiment ....")
@@ -43,7 +43,7 @@ def initializeDatabase(databaseParameters):
 						(id SERIAL PRIMARY KEY, time TIMESTAMP, position INT)
 						""")
 			elif table == 'segmented':
-    			cur.execute("""CREATE TABLE segmented
+				cur.execute("""CREATE TABLE segmented
 						(id SERIAL PRIMARY KEY, time TIMESTAMP, position INT, 
 						segmentedImagePath VARCHAR, rawImagePath VARCHAR, locations BYTEA)
 						""")
@@ -52,12 +52,12 @@ def initializeDatabase(databaseParameters):
 						(id SERIAL PRIMARY KEY, time TIMESTAMP, position INT,
 						channelNumber INT, status BYTEA)
 						""")
-
 	except pg.DatabaseError as e:
 		print(f"Error: {e}")
 		sys.exit(1)
 	finally:
 		if con:
+			con.close()
 
 """
 Set up the queues and start the experiment ...
