@@ -139,3 +139,24 @@ def phaseTimeSeriesEvents(positionsData, acquisitionParameters):
 			events.append(event)
 
 	return events 
+
+def getPositionList(filename=None):
+    # if the filename is None, then just load something for test purposes
+    if filename is None:
+        positions = {}
+        for i in range(20):
+            positions['Pos' + str(i)] = {'x_coordinate':0, 'y_coordinate': 0, 'pfs_offset': 0}
+        return positions
+    else:
+        positions = parsePositionsFile(filename)
+        return positions
+
+
+def getPositionsMicroManager():
+    # connect to micromanager and get positions
+    return None
+
+def getMicroManagerPresets():
+    return ["phase", "alexa488", "cy5", "cy3", "texasred"]
+    
+

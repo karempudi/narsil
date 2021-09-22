@@ -16,6 +16,9 @@ pyside-uic main.ui > ui_mainwindow.py
 Each window on the screen has a .ui file associated with it and python class
 to access the elements and functions to run when events happen in that window.
 
+We use the classes for each of the window in the UI directory to build on top 
+of them and hook all the handlers 
+
 ## Classes useful for the GUI
 
 exptDatabase.py handles all the database queries, setup and schemas
@@ -28,6 +31,10 @@ GUI loop. run.py will have the starting functions for the liverun module
 
 datasets.py and utils.py have databundling capabilites and utils needed
 in the GUI both in the front and backend
+
+exptUI.py has all the classes that hook up the buttons with appropriate 
+funcitonality in the UI using he ui_window.py files of each of the windows
+in the UI directory.
 
 ## Database 
 
