@@ -17,7 +17,8 @@ setup(
             'scipy',
             'matplotlib',
             'wxPython',
-            'psycopg2'
+            'psycopg2',
+            'PySide6'
             ],
         packages=find_packages(exclude=("tests", "notebooks",))
         )

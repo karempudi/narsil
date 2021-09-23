@@ -195,7 +195,7 @@ class Ui_SetupWindow(object):
         SetupWindow.setWindowTitle(QCoreApplication.translate("SetupWindow", u"SetupWindow", None))
         self.exptSetupBox.setTitle(QCoreApplication.translate("SetupWindow", u"Experiment Setup", None))
         self.exptNoLabel.setText(QCoreApplication.translate("SetupWindow", u"Experiment No:", None))
-        self.exptNoText.setText(QCoreApplication.translate("SetupWindow", u"EXP-21-BP000", None))
+        self.exptNoText.setText(QCoreApplication.translate("SetupWindow", u"EXP21BP000", None))
         self.exptNoSetButton.setText(QCoreApplication.translate("SetupWindow", u"Set", None))
         self.exptNoClearButton.setText(QCoreApplication.translate("SetupWindow", u"Clear", None))
         self.positionsInputLabel.setText(QCoreApplication.translate("SetupWindow", u"Get Positions from:", None))

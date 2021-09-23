@@ -46,7 +46,7 @@
       <item>
        <widget class="QLineEdit" name="exptNoText">
         <property name="text">
-         <string>EXP-21-BP000</string>
+         <string>EXP21BP000</string>
         </property>
        </widget>
       </item>

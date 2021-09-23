@@ -6,8 +6,8 @@ import numpy as np
 from pathlib import Path
 from collections import OrderedDict
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox
-from PySide6.QtCore import QFile, QIODevice, QTimer, Signal
+from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
+from PySide6.QtCore import QFile, QIODevice, QTimer, Signal, Qt
 from PySide6.QtUiTools import QUiLoader
 
 import pyqtgraph as pg
@@ -24,6 +24,7 @@ from narsil.liverun.ui.ui_MainWindow import Ui_MainWindow
 from narsil.liverun.ui.ui_EventsWindow import Ui_EventsWindow
 from narsil.liverun.ui.ui_SetupWindow import Ui_SetupWindow
 from narsil.liverun.exptDatabase import exptDatabase
+from narsil.liverun.exptProcesses import exptProcesses
 
 class MainWindow(QMainWindow):
 
@@ -36,6 +37,12 @@ class MainWindow(QMainWindow):
         # expt and analysis objects
         self.exptSetupSettings = None
         self.analysisSetupSettings = None
+        self.exptSetupOk = False
+        self.analysisSetupOk = False
+
+        # database, tables Ok
+        self.databaseOk = False
+        self.tablesOk = False
 
         # setup button handlers
         self.setupButtonHandlers()
@@ -48,7 +55,13 @@ class MainWindow(QMainWindow):
         # Create a database class object to be able to interact 
         # with the database when needed using a normal function
         # for most cases and threadpool when need to get larger data/files
-        database = exptDatabase()
+        self.database = exptDatabase()
+        self.databaseOk = False
+
+        # starting process of the experiment
+        self.exptProcess = exptProcesses()
+
+        self.exptProcessStarted = False
 
 
     def setupButtonHandlers(self):
@@ -57,14 +70,40 @@ class MainWindow(QMainWindow):
         # view setup button
         self.ui.viewExptSetupButton.clicked.connect(self.viewSetup)
 
+        ############# controls button ############
+        # create a database for the experiment
+        self.ui.createDbButton.clicked.connect(self.createDatabase)
+        # create the tables for analysis in the database
+        self.ui.createTablesButton.clicked.connect(self.createTables)
+        # delete database for the experiment
+        self.ui.deleteDbButton.clicked.connect(self.deleteDatabase)
+        # delete tables in the database
+        self.ui.deleteTablesButton.clicked.connect(self.deleteTables)
+
+        # start the experiment
+        self.ui.startExptButton.clicked.connect(self.startExpt)
+        # stop the experiment
+        self.ui.stopExptButton.clicked.connect(self.stopExpt)
+        # start the analysis
+        self.ui.startAnalysisButton.clicked.connect(self.startAnalysis)
+        # stop the analysis
+        self.ui.stopAnalysisButton.clicked.connect(self.stopAnalysis)
+        # move to position no
+        self.ui.moveToPositionButton.clicked.connect(self.moveToPosition)
+        # live window can be used for tweezing
+        self.ui.liveButton.clicked.connect(self.showLive)
+        # tweeze positions
+        self.ui.tweezePositionsButton.clicked.connect(self.showTweezablePositions)
 
     # signal catcher from setup window
     def receivedEvents(self, exptSettings):
         self.exptSetupSettings = exptSettings
+        self.exptSetupOk = True
     
     # signal catcher from setup window
     def receivedAnalysisSetup(self, analysisSettings):
         self.analysisSetupSettings = analysisSettings
+        self.analysisSetupOk = True
 
     #############  setup button handlers ##################
 
@@ -96,7 +135,54 @@ class MainWindow(QMainWindow):
         msg.exec()     
     
     ############ controls button handlers ##################
+    def createDatabase(self):
+        if self.exptSetupOk:
+            self.database.dbname = self.exptSetupSettings['exptNo'].lower()
+            self.database.createDatabase()
+            self.databaseOk = True
+    
+    def createTables(self):
+        # depending on what you analyze you can create appropriate table
+        if self.analysisSetupOk == True:
+            # make a list of tables to constrct and construct them 
+            tables = []
+            tables.extend(['arrival', 'segment'])
+            if self.analysisSetupSettings['deadAlive']:
+                tables.append('deadalive')
+            
+            if self.analysisSetupSettings['growthRates']:
+                tables.append('growth')
+            
+            self.database.tables = tables
+            print(self.database.tables)
+            self.database.createTables()
 
+    def deleteDatabase(self):
+        self.database.deleteDatabase()
+    
+    def deleteTables(self):
+        self.database.deleteTables()
+
+    def startExpt(self):
+        pass
+
+    def stopExpt(self):
+        pass
+    
+    def startAnalysis(self):
+        pass
+    
+    def stopAnalysis(self):
+        pass
+    
+    def moveToPosition(self):
+        pass
+    
+    def showLive(self):
+        pass
+    
+    def showTweezablePositions(self):
+        pass
 
     ############ viewer button handlers ####################
 
@@ -221,7 +307,7 @@ class ExptSetupWindow(QMainWindow):
     
     def clearExptNo(self, clicked):
         self.exptNo = None
-        self.ui.exptNoText.setText("EXP-21-BP000")
+        self.ui.exptNoText.setText("EXP21BP000")
 
     def fileOptionClicked(self, clicked):
         self.positionsFromFile = self.ui.fromFile.isChecked()
@@ -660,7 +746,7 @@ class EventsWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    exptWindow = MainWindow()
+    window = MainWindow()
     window.show()
     sys.exit(app.exec())
 
