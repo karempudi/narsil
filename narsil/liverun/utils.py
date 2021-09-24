@@ -8,13 +8,14 @@ import json
 import torch
 from collections import OrderedDict
 from skimage import transform
+import numpy as np
 
 class resizeOneImage(object):
 
-	def __init__(self, imgReizeShape, imgToNetSize):
-		assert isinstance(imgReizeShape, tuple)
+	def __init__(self, imgResizeShape, imgToNetSize):
+		assert isinstance(imgResizeShape, tuple)
 		assert isinstance(imgToNetSize, tuple)
-		self.imgResizeShape = imgRezieShape
+		self.imgResizeShape = imgResizeShape
 		self.imgToNetSize = imgToNetSize
 	
 	def __call__(self, image):

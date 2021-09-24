@@ -121,13 +121,13 @@ class exptDatabase(object):
                     sys.stdout.write(f"Table {table} is created ...\n")
                 elif table == 'segment':
                     cur.execute("""CREATE TABLE segment
-                            (id SERIAl PRIMARY KEY, time TIMESTAMP, position INT,
+                            (id SERIAl PRIMARY KEY, time TIMESTAMP, position INT, timepoint INT,
                             segmentedpath VARCHAR, rawpath VARCHAR, locations BYTEA)
                             """)
                     sys.stdout.write(f"Table {table} is created ...\n")
                 elif table == 'deadalive':
                     cur.execute("""CREATE TABLE deadalive
-                            (id SERIAL PRIMARY KEY, time TIMESTAMP, position INT,
+                            (id SERIAL PRIMARY KEY, time TIMESTAMP, position INT, timepoint INT,
                             channelno INT, status BYTEA)
                             """)
                     sys.stdout.write(f"Table {table} is created ...\n")
@@ -257,8 +257,15 @@ class exptDatabase(object):
             cur = con.cursor()
             con.autocommit = True
 
-            cur.execute()
+            if tableName == 'arrival':
+                cur.execute("SELECT position, timepoint FROM arrival")
+            elif tableName == 'segment':
+                cur.execute("SELECT position, timepoint FROM segment")
+            elif tableName == 'deadalive':
+                pass
 
+            data = cur.fetchall()
+            
             sys.stdout.write("")
             sys.stdout.flush()
         

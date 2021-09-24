@@ -58,15 +58,14 @@ class exptRun(object):
     def loadNets(self):
         pass
 
-    # you will call each of these functions inside a process in the main GUI
 
+    # all the transformations can be set depending on the images taken
     def setImageTransforms(self):
         # operations on the images before processing
         self.phaseImageSize = (self.imageProcessParameters["imageHeight"], self.imageProcessParameters["imageWidth"])
         self.resize = resizeOneImage(self.phaseImageSize, self.phaseImageSize) 
         self.tensorize = tensorizeOneImage()
         self.segTransforms = transforms.Compose([self.resize, self.tensorize])
-
 
 
     def putImagesInSegQueue(self, image, metadata):
@@ -81,8 +80,9 @@ class exptRun(object):
                                     'position': metadata['Axes']['position'],
                                     'time': metadata['Axes']['time']})
         except Exception as error:
-            sys.stdout.write(f"Image at position: {metadata['Axes']['position']} and time: {metadata['Axes']['time']}")
-            sys.stdout.flush()
+            sys.stderr.write(f"Image at position: {metadata['Axes']['position']} and time: {metadata['Axes']['time']}\n")
+            sys.stderr.write(f"Error: {error}")
+            sys.stderr.flush()
 
         # write to database
         con = None
@@ -98,8 +98,8 @@ class exptRun(object):
                         VALUES (%s, %s, %s)""", (datetime.now(), int(metadata['Axes']['position']),
                         int(metadata['Axes']['time']),))
         except pgdatabase.DatabaseError as e:
-            sys.stdout.write(f"Error in writing to arrival: {e}")
-            sys.stdout.flush()
+            sys.stderr.write(f"Error in writing to arrival: {e}")
+            sys.stderr.flush()
         finally:
             if con:
                 con.close()

@@ -173,10 +173,20 @@ class MainWindow(QMainWindow):
 
     def startExpt(self):
         # basically launch a QProcess and call scirpt with appropriate arugments
-        if self.exptSetupOk:
-            print("Expt setup is ok .. Running now ...")
+        if self.exptSetupOk and self.databaseOk:
             self.exptRun.acquireEvents = self.exptSetupSettings['events'] 
+            self.exptRun.imageProcessParameters = {'imageHeight': self.analysisSetupSettings["imageHeight"],
+                                            'imageWidth': self.analysisSetupSettings["imageWidth"]}
+            # run with default password, do user-password creation later 
+            self.exptRun.dbParameters = {'dbname': self.database.dbname,
+                                         'dbuser': 'postgres',
+                                         'dbpassword': 'postgres'
+                                        }
+            self.exptRun.setImageTransforms()
+
+            self.initializePlots()
             self.exptRun.run()
+            print("Expt setup is ok .. Running now ...")
 
     def stopExpt(self):
         # send kill signal to the QProcess running the experiment
@@ -197,11 +207,34 @@ class MainWindow(QMainWindow):
 
     ############ statistics button handlers ################
 
+    ############ Plotting handlers #########################
+
+    # initialize the plots before starting the experiment
+    def initializePlots(self):
+
+        # arrival plot
+        if 'arrival' in self.database.tables:
+            self.acquiredPlot = self.ui.imgAcquiredPlot.getPlotItem()
+            self.acquiredPlot.setLabel('left', text='timepoint')
+            self.acquiredPlot.setLabel('bottom', text='position')
+            self.acquiredPlot.setTitle(title='Images Acquired')
+        
+        if 'segment' in self.database.tables:
+            self.segmentPlot = self.ui.imgSegPlot.getPlotItem()
+            self.segmentPlot.setLabel('left', text='timepoint')
+            self.segmentPlot.setLabel('bottom', text='position')
+            self.segmentPlot.setTitle(title='Images segmented')
+        
+
+    # plots are update every few seconds, this timer can be set
+    # in the intialization of the UI
+    def updateStatusPlots(self):
+        # Get data from each table and update the plot data
+        pass
+
 
     ############ other miscalleneous handlers ##############
-
-    def updateStatusPlots(self):
-        pass
+        
     
 
 class ExptSetupWindow(QMainWindow):

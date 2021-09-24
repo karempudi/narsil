@@ -142,7 +142,7 @@
     <property name="title">
      <string>Experiment Status</string>
     </property>
-    <widget class="ImageView" name="imgArrivalPlot">
+    <widget class="PlotWidget" name="imgAcquiredPlot">
      <property name="geometry">
       <rect>
        <x>20</x>
@@ -152,7 +152,7 @@
       </rect>
      </property>
     </widget>
-    <widget class="QGraphicsView" name="imgSegPlot">
+    <widget class="PlotWidget" name="imgSegPlot">
      <property name="geometry">
       <rect>
        <x>230</x>
@@ -162,7 +162,7 @@
       </rect>
      </property>
     </widget>
-    <widget class="QGraphicsView" name="deadAlivePlot">
+    <widget class="PlotWidget" name="deadAlivePlot">
      <property name="geometry">
       <rect>
        <x>440</x>
@@ -172,7 +172,7 @@
       </rect>
      </property>
     </widget>
-    <widget class="QGraphicsView" name="growthRatePlot">
+    <widget class="PlotWidget" name="growthRatesPlot">
      <property name="geometry">
       <rect>
        <x>650</x>
@@ -182,7 +182,7 @@
       </rect>
      </property>
     </widget>
-    <widget class="QLabel" name="label">
+    <widget class="QLabel" name="acquiredLabel">
      <property name="geometry">
       <rect>
        <x>20</x>
@@ -206,7 +206,7 @@
       <enum>Qt::PlainText</enum>
      </property>
     </widget>
-    <widget class="QLabel" name="label_2">
+    <widget class="QLabel" name="segmentedLabel">
      <property name="geometry">
       <rect>
        <x>240</x>
@@ -230,7 +230,7 @@
       <enum>Qt::PlainText</enum>
      </property>
     </widget>
-    <widget class="QLabel" name="label_3">
+    <widget class="QLabel" name="deadaliveLabel">
      <property name="geometry">
       <rect>
        <x>440</x>
@@ -254,7 +254,7 @@
       <enum>Qt::PlainText</enum>
      </property>
     </widget>
-    <widget class="QLabel" name="label_4">
+    <widget class="QLabel" name="growthRatesLabel">
      <property name="geometry">
       <rect>
        <x>650</x>
@@ -284,7 +284,7 @@
      <rect>
       <x>230</x>
       <y>20</y>
-      <width>541</width>
+      <width>651</width>
       <height>151</height>
      </rect>
     </property>
@@ -504,7 +504,7 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ImageView</class>
+   <class>PlotWidget</class>
    <extends>QGraphicsView</extends>
    <header>pyqtgraph</header>
   </customwidget>
