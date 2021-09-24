@@ -245,7 +245,10 @@ class ExptSetupWindow(QMainWindow):
 
         # analysis setting that need to be stored
         self.analysisSettings = {"cellNet": "normal", 
-                    "channelSeg": None, "deadAlive": None, "growthRates": None}
+                    "channelSeg": None, "deadAlive": None, "growthRates": None,
+                    "cellSegNetModelPath": None, "channelSegNetModelPath": None,
+                    "imageHeight": None, "imageWidth": None
+                    }
 
     
     # Receiving events list from the create Events subwindow
@@ -282,6 +285,16 @@ class ExptSetupWindow(QMainWindow):
         #########################################################
         ############## Analysis Setup Buttons ###################
         #########################################################
+        # detect changes in net-type selection
+        self.ui.selectNet.currentIndexChanged.connect(self.changeNetType)
+        # select cell segment net model file
+        self.ui.cellSegNetFilePathButton.clicked.connect(self.setCellSegModelPath)
+        # select channel segmet net model file
+        self.ui.channelSegNetFilePathButton.clicked.connect(self.setChannelSegModelPath)
+        # image height set
+        self.ui.imageHeight.textChanged.connect(self.setImageHeight)
+        # image width set
+        self.ui.imageWidth.textChanged.connect(self.setImageWidth)
         # checkbox for channel segmentation
         self.ui.segChannels.stateChanged.connect(self.setChannelSegmentation)
         # deadAlive for rudimentary tracking
@@ -290,6 +303,7 @@ class ExptSetupWindow(QMainWindow):
         self.ui.calcGrowthRates.stateChanged.connect(self.setGrowthRates)
         # validate analysis setup
         self.ui.validateAnalysisSetupButton.clicked.connect(self.validateAnalysisSetup)
+
 
 
         # save button and the close button
@@ -411,6 +425,61 @@ class ExptSetupWindow(QMainWindow):
         msg.setIcon(QMessageBox.Information)
         msg.exec()
 
+
+    def changeNetType(self, i):
+        currentType = self.ui.selectNet.currentText()
+        self.analysisSettings["cellNet"] = str(currentType)
+
+    def setCellSegModelPath(self):
+        filename = QFileDialog.getOpenFileName(self, 
+                self.tr("Open Cell Segment Model Path"), '.', self.tr("Pytorch model files (*.pth)"))
+
+        if filename == '':
+            msg = QMessageBox()
+            msg.setText("Cell Segmentation model not set")
+            msg.exec()
+        else:
+            self.analysisSettings["cellSegNetModelPath"] = filename[0]
+            print(f"Cell Seg model file: {self.analysisSettings['cellSegNetModelPath']}")
+
+
+    def setChannelSegModelPath(self):
+        filename = QFileDialog.getOpenFileName(self, 
+                self.tr("Open Channel Segment Model Path"), '.', self.tr("Pytorch model files (*.pth)"))
+
+        if filename == '':
+            msg = QMessageBox()
+            msg.setText("Channel Segmentation model not set")
+            msg.exec()
+        else:
+            self.analysisSettings["channelSegNetModelPath"] = filename[0]
+            print(f"Channel Seg model file: {self.analysisSettings['channelSegNetModelPath']}")
+
+    def setImageHeight(self):
+        height = self.ui.imageHeight.text()
+        # set to the nearest multiple of 16
+        try:
+            intHeight = int(height)
+            if intHeight%32 != 0:
+                intHeight = intHeight - intHeight%32 + 32
+            self.analysisSettings['imageHeight'] = intHeight
+        except:
+            msg = QMessageBox()
+            msg.setText("Height should be a number")
+            msg.exec()
+
+    def setImageWidth(self):
+        width = self.ui.imageWidth.text()
+        # set to the nearest multiple of 16
+        try:
+            intWidth = int(width)
+            if intWidth%32 != 0:
+                intWidth = intWidth - intWidth%32 + 32
+            self.analysisSettings['imageWidth'] = intWidth
+        except:
+            msg = QMessageBox()
+            msg.setText("Weight should be a number")
+            msg.exec()
 
     def setChannelSegmentation(self, s):
         self.analysisSettingsValidated = False

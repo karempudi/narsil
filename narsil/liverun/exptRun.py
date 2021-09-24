@@ -1,5 +1,6 @@
 import multiprocessing as mp
 import torch.multiprocessing as tmp
+import psycopg2 as pgdatabase
 import torch
 import argparse
 import os
@@ -10,6 +11,9 @@ from functools import partial
 from torchvision import transforms, utils
 from queue import Empty
 from pycromanager import Acquisition
+from narsil.liverun.utils import queueDataset, resizeOneImage, tensorizeOneImage
+from datetime import datetime
+
 
 """
 ExptProcess class that creates runs all the processes and
@@ -47,9 +51,13 @@ class exptRun(object):
 
         # datasets: These are wrappers around torch multiprocessing queues, that are used
         # to fetch data using iterable dataloader. Dataloader
-        self.segmentDatase
+        self.segmentDataset = queueDataset(self.segmentQueue) 
 
-
+        # operations on the images before processing
+        self.phaseImageSize = (self.imageProcessParameters["imageHeight"], self.imageProcessParameters["imageWidth"])
+        self.resize = resizeOneImage(self.phaseImageSize, self.phaseImageSize) 
+        self.tensorize = tensorizeOneImage()
+        self.segTransforms = transforms.Compose([self.resize, self.tensorize])
 
         self.loadNets()
 
@@ -61,9 +69,40 @@ class exptRun(object):
     def putImagesInSegQueue(self, image, metadata):
         sys.stdout.write(f"Image Acquired ... {image.shape} .. {metadata['Axes']} .. {metadata['Time']}\n")
         sys.stdout.flush()
-        
-        # put image in queue and then write into database that image has arrived
+        # transform the image into a tensor
+        imageTensor = self.segTransforms(image)
 
+        # put the image into the segmentDataset
+        try:
+            self.segmentDataset.put({'image': imageTensor,
+                                    'position': metadata['Axes']['position']
+                                    'time': metadata['Axes']['time']})
+        except Exception as error:
+            sys.stdout.write(f"Image at position: {metadata['Axes']['position']} and time: {metadata['Axes']['time']}")
+            sys.stdout.flush()
+
+        # write to database
+        con = None
+        try:
+            con = pgdatabase.connect(database=self.dbParameters['dbname'],
+                                     user=self.dbParameters['dbuser'],
+                                     password=self.dbParameters['dbpassword'])
+            cur = con.cursor()
+            con.autocommit = True
+
+            # insert the arrival of the image into the database table arrival
+            cur.execute("""INSERT INTO arrival (time, position, timepoint)
+                        VALUES (%s, %s, %s)""", (datetime.now(), int(metadata['Axes']['position']),
+                        int(metadata['Axes']['time']),))
+        except pgdatabase.DatabaseError as e:
+            sys.stdout.write(f"Error in writing to arrival: {e}")
+            sys.stdout.flush()
+        finally:
+            if con:
+                con.close()
+
+    def waitForPFS(self, ):
+        pass
 
     def acquire(self):
 
@@ -99,7 +138,6 @@ class exptRun(object):
     def stop(self):
 
         self.acquireKillEvent.set()
-
 
 
 if __name__ == "__main__":

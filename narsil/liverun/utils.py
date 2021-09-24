@@ -5,14 +5,42 @@ import tkinter as tk
 from tkinter import filedialog
 import sys
 import json
+import torch
 from collections import OrderedDict
+from skimage import transform
+
+class resizeOneImage(object):
+
+	def __init__(self, imgReizeShape, imgToNetSize):
+		assert isinstance(imgReizeShape, tuple)
+		assert isinstance(imgToNetSize, tuple)
+		self.imgResizeShape = imgRezieShape
+		self.imgToNetSize = imgToNetSize
+	
+	def __call__(self, image):
+		height, width = image.shape
+
+		image = np.pad(image, pad_width=((0, self.imgResizeShape[0] - height), (0, self.imgResizeShape[1] - width)),
+					mode='constant', constant_values = 0.0)
+		
+		if self.imgResizeShape[0] != self.imgToNetSize[0] or self.imgResizeShape[1] != self.imgToNetSize[1]:
+			image = transform.resize(image, self.imgToNetSize, anti_aliasing=True) 
+		
+		return image
+
+class tensorizeOneImage(object):
+	
+	def __call__(self, phaseImage):
+		phaseImage = phaseImage.astype('float32')
+		return torch.from_numpy(phaseImage).unsqueeze(0)
+
 
 """
 Gerenric queue for yielding objects from the queue in a safe way to be
 processed by different processes piping into the queue and out of the
 queue
 """
-class genericQueue(IterableDataset):
+class queueDataset(IterableDataset):
 	def __init__(self, queue):
 		self.queue = queue
 	

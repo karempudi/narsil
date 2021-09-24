@@ -17,7 +17,7 @@ class Ui_SetupWindow(object):
     def setupUi(self, SetupWindow):
         if not SetupWindow.objectName():
             SetupWindow.setObjectName(u"SetupWindow")
-        SetupWindow.resize(594, 593)
+        SetupWindow.resize(623, 720)
         self.centralwidget = QWidget(SetupWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.exptSetupBox = QGroupBox(self.centralwidget)
@@ -112,10 +112,10 @@ class Ui_SetupWindow(object):
         self.validateExptSetupButton.setGeometry(QRect(260, 200, 171, 23))
         self.analysisSetupBox = QGroupBox(self.centralwidget)
         self.analysisSetupBox.setObjectName(u"analysisSetupBox")
-        self.analysisSetupBox.setGeometry(QRect(30, 250, 541, 211))
+        self.analysisSetupBox.setGeometry(QRect(30, 240, 541, 271))
         self.horizontalLayoutWidget = QWidget(self.analysisSetupBox)
         self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
-        self.horizontalLayoutWidget.setGeometry(QRect(10, 40, 431, 31))
+        self.horizontalLayoutWidget.setGeometry(QRect(10, 20, 431, 31))
         self.segmentationLayout = QHBoxLayout(self.horizontalLayoutWidget)
         self.segmentationLayout.setObjectName(u"segmentationLayout")
         self.segmentationLayout.setContentsMargins(0, 0, 0, 0)
@@ -133,7 +133,7 @@ class Ui_SetupWindow(object):
 
         self.horizontalLayoutWidget_7 = QWidget(self.analysisSetupBox)
         self.horizontalLayoutWidget_7.setObjectName(u"horizontalLayoutWidget_7")
-        self.horizontalLayoutWidget_7.setGeometry(QRect(10, 80, 431, 31))
+        self.horizontalLayoutWidget_7.setGeometry(QRect(10, 170, 431, 31))
         self.channelSegLayout = QHBoxLayout(self.horizontalLayoutWidget_7)
         self.channelSegLayout.setObjectName(u"channelSegLayout")
         self.channelSegLayout.setContentsMargins(0, 0, 0, 0)
@@ -144,7 +144,7 @@ class Ui_SetupWindow(object):
 
         self.horizontalLayoutWidget_8 = QWidget(self.analysisSetupBox)
         self.horizontalLayoutWidget_8.setObjectName(u"horizontalLayoutWidget_8")
-        self.horizontalLayoutWidget_8.setGeometry(QRect(10, 120, 431, 31))
+        self.horizontalLayoutWidget_8.setGeometry(QRect(10, 200, 431, 31))
         self.cellAnalysisLayout = QHBoxLayout(self.horizontalLayoutWidget_8)
         self.cellAnalysisLayout.setObjectName(u"cellAnalysisLayout")
         self.cellAnalysisLayout.setContentsMargins(0, 0, 0, 0)
@@ -160,10 +160,56 @@ class Ui_SetupWindow(object):
 
         self.validateAnalysisSetupButton = QPushButton(self.analysisSetupBox)
         self.validateAnalysisSetupButton.setObjectName(u"validateAnalysisSetupButton")
-        self.validateAnalysisSetupButton.setGeometry(QRect(280, 170, 131, 23))
+        self.validateAnalysisSetupButton.setGeometry(QRect(290, 240, 131, 23))
+        self.formLayoutWidget = QWidget(self.analysisSetupBox)
+        self.formLayoutWidget.setObjectName(u"formLayoutWidget")
+        self.formLayoutWidget.setGeometry(QRect(10, 60, 431, 125))
+        self.imageSegLayout = QFormLayout(self.formLayoutWidget)
+        self.imageSegLayout.setObjectName(u"imageSegLayout")
+        self.imageSegLayout.setContentsMargins(0, 0, 0, 0)
+        self.cellSegLabel = QLabel(self.formLayoutWidget)
+        self.cellSegLabel.setObjectName(u"cellSegLabel")
+
+        self.imageSegLayout.setWidget(0, QFormLayout.LabelRole, self.cellSegLabel)
+
+        self.cellSegNetFilePathButton = QPushButton(self.formLayoutWidget)
+        self.cellSegNetFilePathButton.setObjectName(u"cellSegNetFilePathButton")
+
+        self.imageSegLayout.setWidget(0, QFormLayout.FieldRole, self.cellSegNetFilePathButton)
+
+        self.channelSegLabel = QLabel(self.formLayoutWidget)
+        self.channelSegLabel.setObjectName(u"channelSegLabel")
+
+        self.imageSegLayout.setWidget(1, QFormLayout.LabelRole, self.channelSegLabel)
+
+        self.channelSegNetFilePathButton = QPushButton(self.formLayoutWidget)
+        self.channelSegNetFilePathButton.setObjectName(u"channelSegNetFilePathButton")
+
+        self.imageSegLayout.setWidget(1, QFormLayout.FieldRole, self.channelSegNetFilePathButton)
+
+        self.imageWidthLabel = QLabel(self.formLayoutWidget)
+        self.imageWidthLabel.setObjectName(u"imageWidthLabel")
+
+        self.imageSegLayout.setWidget(4, QFormLayout.LabelRole, self.imageWidthLabel)
+
+        self.imageWidth = QLineEdit(self.formLayoutWidget)
+        self.imageWidth.setObjectName(u"imageWidth")
+
+        self.imageSegLayout.setWidget(4, QFormLayout.FieldRole, self.imageWidth)
+
+        self.imageHeight = QLineEdit(self.formLayoutWidget)
+        self.imageHeight.setObjectName(u"imageHeight")
+
+        self.imageSegLayout.setWidget(2, QFormLayout.FieldRole, self.imageHeight)
+
+        self.imageHeightLabel = QLabel(self.formLayoutWidget)
+        self.imageHeightLabel.setObjectName(u"imageHeightLabel")
+
+        self.imageSegLayout.setWidget(2, QFormLayout.LabelRole, self.imageHeightLabel)
+
         self.horizontalLayoutWidget_2 = QWidget(self.centralwidget)
         self.horizontalLayoutWidget_2.setObjectName(u"horizontalLayoutWidget_2")
-        self.horizontalLayoutWidget_2.setGeometry(QRect(270, 470, 221, 51))
+        self.horizontalLayoutWidget_2.setGeometry(QRect(260, 510, 221, 51))
         self.exptSaveCloseButtons = QHBoxLayout(self.horizontalLayoutWidget_2)
         self.exptSaveCloseButtons.setObjectName(u"exptSaveCloseButtons")
         self.exptSaveCloseButtons.setContentsMargins(0, 0, 0, 0)
@@ -183,7 +229,7 @@ class Ui_SetupWindow(object):
         SetupWindow.setStatusBar(self.statusbar)
         self.menubar = QMenuBar(SetupWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 594, 21))
+        self.menubar.setGeometry(QRect(0, 0, 623, 21))
         SetupWindow.setMenuBar(self.menubar)
 
         self.retranslateUi(SetupWindow)
@@ -208,13 +254,19 @@ class Ui_SetupWindow(object):
         self.validateExptSetupButton.setText(QCoreApplication.translate("SetupWindow", u"Validate Experiment Setup", None))
         self.analysisSetupBox.setTitle(QCoreApplication.translate("SetupWindow", u"Analysis Setup", None))
         self.segmentationLabel.setText(QCoreApplication.translate("SetupWindow", u"Cell Segmentation: ", None))
-        self.selectNet.setItemText(0, QCoreApplication.translate("SetupWindow", u"Normal U-net", None))
-        self.selectNet.setItemText(1, QCoreApplication.translate("SetupWindow", u"Small U-net", None))
+        self.selectNet.setItemText(0, QCoreApplication.translate("SetupWindow", u"normal", None))
+        self.selectNet.setItemText(1, QCoreApplication.translate("SetupWindow", u"small", None))
 
         self.segChannels.setText(QCoreApplication.translate("SetupWindow", u"Channel Segmentation", None))
         self.calcDeadAlive.setText(QCoreApplication.translate("SetupWindow", u"DeadAlive", None))
         self.calcGrowthRates.setText(QCoreApplication.translate("SetupWindow", u"Growth Rates", None))
         self.validateAnalysisSetupButton.setText(QCoreApplication.translate("SetupWindow", u"Validate Analysis Setup", None))
+        self.cellSegLabel.setText(QCoreApplication.translate("SetupWindow", u"Cell seg Net Path:                         ", None))
+        self.cellSegNetFilePathButton.setText(QCoreApplication.translate("SetupWindow", u"Select Cell SegNet model file", None))
+        self.channelSegLabel.setText(QCoreApplication.translate("SetupWindow", u"Channel seg Net Path:                         ", None))
+        self.channelSegNetFilePathButton.setText(QCoreApplication.translate("SetupWindow", u"Select Channel SegNet model file", None))
+        self.imageWidthLabel.setText(QCoreApplication.translate("SetupWindow", u"Image Width:", None))
+        self.imageHeightLabel.setText(QCoreApplication.translate("SetupWindow", u"Image Height:", None))
         self.resetExptSetupButton.setText(QCoreApplication.translate("SetupWindow", u"Reset", None))
         self.closeExptSetupButton.setText(QCoreApplication.translate("SetupWindow", u"Close", None))
     # retranslateUi
