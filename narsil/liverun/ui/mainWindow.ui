@@ -296,7 +296,7 @@
       <rect>
        <x>20</x>
        <y>70</y>
-       <width>88</width>
+       <width>131</width>
        <height>27</height>
       </rect>
      </property>
@@ -309,38 +309,12 @@
       <rect>
        <x>20</x>
        <y>30</y>
-       <width>88</width>
+       <width>131</width>
        <height>27</height>
       </rect>
      </property>
      <property name="text">
       <string>Start Expt</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="startAnalysisButton">
-     <property name="geometry">
-      <rect>
-       <x>130</x>
-       <y>30</y>
-       <width>121</width>
-       <height>27</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Start Analysis</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="stopAnalysisButton">
-     <property name="geometry">
-      <rect>
-       <x>130</x>
-       <y>70</y>
-       <width>121</width>
-       <height>27</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Stop Analysis</string>
      </property>
     </widget>
     <widget class="QPushButton" name="createDbButton">

@@ -24,7 +24,7 @@ from narsil.liverun.ui.ui_MainWindow import Ui_MainWindow
 from narsil.liverun.ui.ui_EventsWindow import Ui_EventsWindow
 from narsil.liverun.ui.ui_SetupWindow import Ui_SetupWindow
 from narsil.liverun.exptDatabase import exptDatabase
-from narsil.liverun.exptProcesses import exptProcesses
+from narsil.liverun.exptRun import exptRun
 
 class MainWindow(QMainWindow):
 
@@ -59,9 +59,15 @@ class MainWindow(QMainWindow):
         self.databaseOk = False
 
         # starting process of the experiment
-        self.exptProcess = exptProcesses()
+        self.exptRun = exptRun()
+        self.exptRunStarted = False
 
-        self.exptProcessStarted = False
+        # timer that update plots every few seconds
+        self.timer = QTimer()
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.updateStatusPlots)
+        self.timer.start()
+
 
 
     def setupButtonHandlers(self):
@@ -84,16 +90,16 @@ class MainWindow(QMainWindow):
         self.ui.startExptButton.clicked.connect(self.startExpt)
         # stop the experiment
         self.ui.stopExptButton.clicked.connect(self.stopExpt)
-        # start the analysis
-        self.ui.startAnalysisButton.clicked.connect(self.startAnalysis)
-        # stop the analysis
-        self.ui.stopAnalysisButton.clicked.connect(self.stopAnalysis)
         # move to position no
         self.ui.moveToPositionButton.clicked.connect(self.moveToPosition)
         # live window can be used for tweezing
         self.ui.liveButton.clicked.connect(self.showLive)
         # tweeze positions
         self.ui.tweezePositionsButton.clicked.connect(self.showTweezablePositions)
+
+        ############ viewer button ###############
+
+        ############ statistics button ###########
 
     # signal catcher from setup window
     def receivedEvents(self, exptSettings):
@@ -159,22 +165,24 @@ class MainWindow(QMainWindow):
 
     def deleteDatabase(self):
         self.database.deleteDatabase()
+        self.databaseOk = False
     
     def deleteTables(self):
         self.database.deleteTables()
+        self.databaseOk = False
 
     def startExpt(self):
-        pass
+        # basically launch a QProcess and call scirpt with appropriate arugments
+        if self.exptSetupOk:
+            print("Expt setup is ok .. Running now ...")
+            self.exptRun.acquireEvents = self.exptSetupSettings['events'] 
+            self.exptRun.run()
 
     def stopExpt(self):
-        pass
-    
-    def startAnalysis(self):
-        pass
-    
-    def stopAnalysis(self):
-        pass
-    
+        # send kill signal to the QProcess running the experiment
+        if self.exptSetupOk:
+            self.exptRun.stop()
+   
     def moveToPosition(self):
         pass
     
@@ -186,11 +194,14 @@ class MainWindow(QMainWindow):
 
     ############ viewer button handlers ####################
 
+
     ############ statistics button handlers ################
+
 
     ############ other miscalleneous handlers ##############
 
-
+    def updateStatusPlots(self):
+        pass
     
 
 class ExptSetupWindow(QMainWindow):
