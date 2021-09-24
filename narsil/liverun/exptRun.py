@@ -53,18 +53,21 @@ class exptRun(object):
         # to fetch data using iterable dataloader. Dataloader
         self.segmentDataset = queueDataset(self.segmentQueue) 
 
-        # operations on the images before processing
-        self.phaseImageSize = (self.imageProcessParameters["imageHeight"], self.imageProcessParameters["imageWidth"])
-        self.resize = resizeOneImage(self.phaseImageSize, self.phaseImageSize) 
-        self.tensorize = tensorizeOneImage()
-        self.segTransforms = transforms.Compose([self.resize, self.tensorize])
-
         self.loadNets()
 
     def loadNets(self):
         pass
 
     # you will call each of these functions inside a process in the main GUI
+
+    def setImageTransforms(self):
+        # operations on the images before processing
+        self.phaseImageSize = (self.imageProcessParameters["imageHeight"], self.imageProcessParameters["imageWidth"])
+        self.resize = resizeOneImage(self.phaseImageSize, self.phaseImageSize) 
+        self.tensorize = tensorizeOneImage()
+        self.segTransforms = transforms.Compose([self.resize, self.tensorize])
+
+
 
     def putImagesInSegQueue(self, image, metadata):
         sys.stdout.write(f"Image Acquired ... {image.shape} .. {metadata['Axes']} .. {metadata['Time']}\n")
@@ -75,7 +78,7 @@ class exptRun(object):
         # put the image into the segmentDataset
         try:
             self.segmentDataset.put({'image': imageTensor,
-                                    'position': metadata['Axes']['position']
+                                    'position': metadata['Axes']['position'],
                                     'time': metadata['Axes']['time']})
         except Exception as error:
             sys.stdout.write(f"Image at position: {metadata['Axes']['position']} and time: {metadata['Axes']['time']}")
