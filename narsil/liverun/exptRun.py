@@ -76,7 +76,7 @@ class exptRun(object):
 
         # put the image into the segmentDataset
         try:
-            self.segmentDataset.put({'image': imageTensor,
+            self.segmentQueue.put({'image': imageTensor,
                                     'position': metadata['Axes']['position'],
                                     'time': metadata['Axes']['time']})
         except Exception as error:
@@ -146,7 +146,7 @@ class exptRun(object):
 if __name__ == "__main__":
     print("Experiment Processes launch ...")
 
-    # parse the argments and create appropriate processes and queues 
+    # parse the argments and create appropriate processes and queues
 
 
 
