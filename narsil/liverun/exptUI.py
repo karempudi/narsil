@@ -62,12 +62,6 @@ class MainWindow(QMainWindow):
         self.exptRun = exptRun()
         self.exptRunStarted = False
 
-        # timer that update plots every few seconds
-        self.timer = QTimer()
-        self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.updateStatusPlots)
-        self.timer.start()
-
 
 
     def setupButtonHandlers(self):
@@ -176,17 +170,27 @@ class MainWindow(QMainWindow):
         if self.exptSetupOk and self.databaseOk:
             self.exptRun.acquireEvents = self.exptSetupSettings['events'] 
             self.exptRun.imageProcessParameters = {'imageHeight': self.analysisSetupSettings["imageHeight"],
-                                            'imageWidth': self.analysisSetupSettings["imageWidth"]}
+                                            'imageWidth': self.analysisSetupSettings["imageWidth"],
+                                            'cellModelPath': self.analysisSetupSettings["cellSegNetModelPath"],
+                                            'channelModelPath': self.analysisSetupSettings["channelSegNetModelPath"]}
             # run with default password, do user-password creation later 
             self.exptRun.dbParameters = {'dbname': self.database.dbname,
                                          'dbuser': 'postgres',
-                                         'dbpassword': 'postgres'
+                                         'dbpassword': 'postgres',
+                                         'tables': self.database.tables
                                         }
             self.exptRun.setImageTransforms()
 
-            self.initializePlots()
             self.exptRun.run()
             print("Expt setup is ok .. Running now ...")
+
+            self.initializePlots()
+
+            # timer that update plots every few seconds
+            self.timer = QTimer()
+            self.timer.setInterval(1000)
+            self.timer.timeout.connect(self.updateStatusPlots)
+            self.timer.start()
 
     def stopExpt(self):
         # send kill signal to the QProcess running the experiment
@@ -215,12 +219,14 @@ class MainWindow(QMainWindow):
         # arrival plot
         if 'arrival' in self.database.tables:
             self.acquiredPlot = self.ui.imgAcquiredPlot.getPlotItem()
+            self.acquiredPlot.clear()
             self.acquiredPlot.setLabel('left', text='timepoint')
             self.acquiredPlot.setLabel('bottom', text='position')
             self.acquiredPlot.setTitle(title='Images Acquired')
         
         if 'segment' in self.database.tables:
             self.segmentPlot = self.ui.imgSegPlot.getPlotItem()
+            self.acquiredPlot.clear()
             self.segmentPlot.setLabel('left', text='timepoint')
             self.segmentPlot.setLabel('bottom', text='position')
             self.segmentPlot.setTitle(title='Images segmented')
@@ -230,7 +236,10 @@ class MainWindow(QMainWindow):
     # in the intialization of the UI
     def updateStatusPlots(self):
         # Get data from each table and update the plot data
-        pass
+        acquiredData = self.database.queryDataForPlots(tableName='arrival')
+        self.acquiredPlot.plot(np.array(acquiredData), symbol='o', pen=pg.mkPen(None))
+
+
 
 
     ############ other miscalleneous handlers ##############

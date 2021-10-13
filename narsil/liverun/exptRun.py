@@ -13,7 +13,7 @@ from queue import Empty
 from pycromanager import Acquisition
 from narsil.liverun.utils import queueDataset, resizeOneImage, tensorizeOneImage
 from datetime import datetime
-
+from narsil.segmentation.network import basicUnet, smallerUnet
 
 """
 ExptProcess class that creates runs all the processes and
@@ -27,7 +27,10 @@ class exptRun(object):
         self.acquireEvents = None
 
         # Image process parameters needed to be set
+        # network model paths are also in imageProcessParameter
+
         self.imageProcessParameters = None
+
 
         # DB parameters that you get from GUI, used for writing data
         # in to the database
@@ -37,27 +40,62 @@ class exptRun(object):
         self.segmentQueue = tmp.Queue()
         self.deadaliveQueue = tmp.Queue()
 
+        self.acquireProcess = None
+        self.segmentProcess = None
+        self.deadAliveProcess = None
+
         self.acquireKillEvent = tmp.Event()
         self.segmentKillEvent = tmp.Event()
         self.deadaliveKilEvent = tmp.Event()
 
+        # all the stuff needed to for processing functions
+        # like the networks used etc
         self.acquireProcess = tmp.Process(target=self.acquire, name='acquireProcess')
         self.segmentProcess = tmp.Process(target=self.segment, name='segmentProcess')
         self.deadAliveProcess = tmp.Process(target=self.deadalive, name='deadaliveProcess')
 
-        # all the stuff needed to for processing functions
-        # like the networks used etc
+
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # datasets: These are wrappers around torch multiprocessing queues, that are used
         # to fetch data using iterable dataloader. Dataloader
         self.segmentDataset = queueDataset(self.segmentQueue) 
 
-        self.loadNets()
+        self.cellSegNet = None
+        self.channelSegNet = None
+ 
 
     def loadNets(self):
-        pass
+        sys.stdout.write(f"Loading networks and sending to device ...\n")
+        sys.stdout.flush()
 
+        # Load the cell-segmentation and channel-segmentation model
+        cellSegModelPath = Path(self.imageProcessParameters["cellModelPath"])
+        cellNetState = torch.load(cellSegModelPath, map_location=self.device)
+            # use the net depending on what model is loaded
+        if cellNetState['modelParameters']['netType'] == 'big':
+            self.cellSegNet = basicUnet(cellNetState['modelParameters']['transposeConv'])
+        elif cellNetState['modelParameters']['netType'] == 'small':
+            self.cellSegNet = smallerUnet(cellNetState['modelParameters']['transposeConv'])
+        
+        self.cellSegNet.load_state_dict(cellNetState['model_state_dict'])
+        self.cellSegNet.eval()
+
+        channelSegModelPath = Path(self.imageProcessParameters["channelModelPath"])
+        channelNetState = torch.load(channelSegModelPath, map_location=self.device)
+            # use the net depending on what model is loaded
+        if channelNetState['modelParameters']['netType'] == 'big':
+            self.channelSegNet = basicUnet(channelNetState['modelParameters']['transposeConv'])
+        elif channelNetState['modelParameters']['netType'] == 'small':
+            self.channelSegNet = smallerUnet(channelNetState['modelParameters']['transposeConv'])
+
+        self.channelSegNet.load_state_dict(channelNetState['model_state_dict'])
+        self.channelSegNet.eval()
+
+        sys.stdout.write(f"Networks loaded onto {self.device} successfully ...\n")
+        sys.stdout.flush()
+
+    
 
     # all the transformations can be set depending on the images taken
     def setImageTransforms(self):
@@ -124,7 +162,10 @@ class exptRun(object):
         sys.stdout.flush()
     
     def segment(self):
-        pass
+        
+        # segmentation loop for both cell and channels
+        sys.stdout.write(f"Starting segmentation ... \n")
+        sys.stdout.flush()
     
     def deadalive(self):
         pass
@@ -135,8 +176,9 @@ class exptRun(object):
     # basically start all the experiment processes and run
     # until the abort buttons are pressed
     def run(self):
-        
+        self.loadNets()
         self.acquireProcess.start()
+        
     
     def stop(self):
 

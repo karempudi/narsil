@@ -252,6 +252,7 @@ class exptDatabase(object):
    
     def queryDataForPlots(self, tableName):
         con = None
+        data = []
         try:
             con = pgdatabase.connect(database=self.dbname, user=self.dbuser, password=self.dbpassword)
             cur = con.cursor()
@@ -276,6 +277,8 @@ class exptDatabase(object):
         finally:
             if con:
                 con.close()
+        
+        return data 
 
 # If you ever want to use this in QProcess 
 if __name__ == "__main__":
