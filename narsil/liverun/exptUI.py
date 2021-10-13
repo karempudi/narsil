@@ -182,7 +182,8 @@ class MainWindow(QMainWindow):
             self.exptRun.setImageTransforms()
 
             self.exptRun.run()
-            print("Expt setup is ok .. Running now ...")
+            sys.stdout.write("Expt setup is ok .. Running now ...\n")
+            sys.stdout.flush()
 
             self.initializePlots()
 
@@ -226,7 +227,7 @@ class MainWindow(QMainWindow):
         
         if 'segment' in self.database.tables:
             self.segmentPlot = self.ui.imgSegPlot.getPlotItem()
-            self.acquiredPlot.clear()
+            self.segmentPlot.clear()
             self.segmentPlot.setLabel('left', text='timepoint')
             self.segmentPlot.setLabel('bottom', text='position')
             self.segmentPlot.setTitle(title='Images segmented')
@@ -237,9 +238,9 @@ class MainWindow(QMainWindow):
     def updateStatusPlots(self):
         # Get data from each table and update the plot data
         acquiredData = self.database.queryDataForPlots(tableName='arrival')
+        segmentData = self.database.queryDataForPlots(tableName='segment')
         self.acquiredPlot.plot(np.array(acquiredData), symbol='o', pen=pg.mkPen(None))
-
-
+        self.segmentPlot.plot(np.array(segmentData), symbol='o', pen=pg.mkPen(None))
 
 
     ############ other miscalleneous handlers ##############

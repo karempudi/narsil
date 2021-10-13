@@ -13,6 +13,7 @@ from queue import Empty
 from pycromanager import Acquisition
 from narsil.liverun.utils import queueDataset, resizeOneImage, tensorizeOneImage
 from datetime import datetime
+from torch.utils.data import DataLoader, Dataset
 from narsil.segmentation.network import basicUnet, smallerUnet
 
 """
@@ -48,13 +49,6 @@ class exptRun(object):
         self.segmentKillEvent = tmp.Event()
         self.deadaliveKilEvent = tmp.Event()
 
-        # all the stuff needed to for processing functions
-        # like the networks used etc
-        self.acquireProcess = tmp.Process(target=self.acquire, name='acquireProcess')
-        self.segmentProcess = tmp.Process(target=self.segment, name='segmentProcess')
-        self.deadAliveProcess = tmp.Process(target=self.deadalive, name='deadaliveProcess')
-
-
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # datasets: These are wrappers around torch multiprocessing queues, that are used
@@ -63,7 +57,14 @@ class exptRun(object):
 
         self.cellSegNet = None
         self.channelSegNet = None
- 
+    
+    def createProcesses(self):
+        # all the stuff needed to for processing functions
+        # like the networks used etc
+        self.acquireProcess = tmp.Process(target=self.acquire, name='acquireProcess')
+        self.segmentProcess = tmp.Process(target=self.segment, name='segmentProcess')
+        self.deadAliveProcess = tmp.Process(target=self.deadalive, name='deadaliveProcess')
+
 
     def loadNets(self):
         sys.stdout.write(f"Loading networks and sending to device ...\n")
@@ -123,20 +124,29 @@ class exptRun(object):
             sys.stderr.flush()
 
         # write to database
+        self.recordInDatabase('arrival', metadata)
+
+    def recordInDatabase(self, tableName, data):
         con = None
         try:
             con = pgdatabase.connect(database=self.dbParameters['dbname'],
-                                     user=self.dbParameters['dbuser'],
-                                     password=self.dbParameters['dbpassword'])
+                                    user=self.dbParameters['dbuser'],
+                                    password=self.dbParameters['dbpassword'])
             cur = con.cursor()
             con.autocommit = True
 
-            # insert the arrival of the image into the database table arrival
-            cur.execute("""INSERT INTO arrival (time, position, timepoint)
-                        VALUES (%s, %s, %s)""", (datetime.now(), int(metadata['Axes']['position']),
-                        int(metadata['Axes']['time']),))
+            if tableName == 'arrival':
+                # insert the arrival of the image into the database table arrival
+                cur.execute("""INSERT INTO arrival (time, position, timepoint)
+                            VALUES (%s, %s, %s)""", (datetime.now(), int(data['Axes']['position']),
+                            int(data['Axes']['time']),))
+            elif tableName == 'segment':
+                cur.execute("""INSERT INTO segment (time, position, timepoint)
+                            VALUES (%s, %s, %s)""", (datetime.now(), int(data['position']),
+                            int(data['time']),))
+
         except pgdatabase.DatabaseError as e:
-            sys.stderr.write(f"Error in writing to arrival: {e}")
+            sys.stderr.write(f"Error in writing to database: {e}")
             sys.stderr.flush()
         finally:
             if con:
@@ -166,6 +176,28 @@ class exptRun(object):
         # segmentation loop for both cell and channels
         sys.stdout.write(f"Starting segmentation ... \n")
         sys.stdout.flush()
+
+        while not self.segmentKillEvent.is_set():
+            try:
+                dataloader = DataLoader(self.segmentDataset, batch_size=1)
+                with torch.no_grad():
+                    for data in dataloader:
+                        image = data['image'].to(self.device)
+                        sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
+                        sys.stdout.flush()
+                        mask = self.channelSegNet(image)
+                        self.recordInDatabase('segment', {'time': data['time'], 'position': data['position']})
+
+            except Empty:
+                sys.stdout.write("Segmentation queue is empty .. but process shutdown is not happening\n")
+                sys.stdout.flush()
+            except KeyboardInterrupt:
+                self.segmentKillEvent.set()
+                sys.stdout.write(f"Segmetation process interrupted using keyboard\n")
+                sys.stdout.flush()
+
+        sys.stdout.write("Segmentation process completed successfully\n")
+        sys.stdout.flush()
     
     def deadalive(self):
         pass
@@ -177,23 +209,18 @@ class exptRun(object):
     # until the abort buttons are pressed
     def run(self):
         self.loadNets()
+        self.createProcesses()
         self.acquireProcess.start()
-        
+        self.acquireProcess = None # set this to none so that the process context
+        # doesn't get copied as it is not picklable.
+        self.segmentProcess.start()
     
     def stop(self):
 
+        self.segmentKillEvent.set()
         self.acquireKillEvent.set()
 
 
 if __name__ == "__main__":
     print("Experiment Processes launch ...")
-
     # parse the argments and create appropriate processes and queues
-
-
-
-
-
-
-
-
