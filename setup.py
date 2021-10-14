@@ -19,7 +19,8 @@ setup(
             'wxPython',
             'psycopg2',
             'PySide6',
-            'pyqtgraph'
+            'pyqtgraph',
+            'notebook'
             ],
         packages=find_packages(exclude=("tests", "notebooks",))
         )

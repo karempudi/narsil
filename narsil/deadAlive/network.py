@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
-from skimage import import module
+from skimage import io
 from torchvision import transforms
 
 
@@ -147,6 +147,12 @@ class deadAliveNet(deadAliveNetBase):
         #print(f"conv1_skip_flatten shape: {conv1_skip_flatten.shape}")
 
         # Conv2, pool1, lrn2
+        conv2  = self.conv[1](lrn1)
+        pool2 = F.relu(F.max_pool2d(conv2, (3, 3), stride=(2,1)))
+        lrn2 = self.lrn[1](pool2)
+        #print(f"lrn2 shape: {lrn2.shape}")
+
+        # some skip connections
         conv2_skip = self.prelu_skip[1](self.conv_skip[1](lrn2))
         #flatten_skip, change the view
         conv2_skip_flatten = conv2_skip.view(batch_size, -1)
