@@ -172,7 +172,6 @@ class exptRun(object):
         sys.stdout.flush()
     
     def segment(self):
-        
         # segmentation loop for both cell and channels
         sys.stdout.write(f"Starting segmentation ... \n")
         sys.stdout.flush()
@@ -185,7 +184,17 @@ class exptRun(object):
                         image = data['image'].to(self.device)
                         sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
                         sys.stdout.flush()
-                        mask = self.channelSegNet(image)
+                        if image == None:
+                            time.sleep(2)
+
+                        # segment here and cut channels and write the data to disk
+                        cellSegMask = self.cellSegNet(image)
+                        channelSegMask = self.channelSegNet(image)
+                        locations = self.findLocations(channelSegMask)
+
+                        # Keep track of locaitons, barcodes in each image and stuff needed to go back and map
+
+
                         self.recordInDatabase('segment', {'time': data['time'], 'position': data['position']})
 
             except Empty:
@@ -198,6 +207,9 @@ class exptRun(object):
 
         sys.stdout.write("Segmentation process completed successfully\n")
         sys.stdout.flush()
+
+    def findLocations(self, channelMask):
+        pass
     
     def deadalive(self):
         pass
@@ -216,9 +228,13 @@ class exptRun(object):
         self.segmentProcess.start()
     
     def stop(self):
-
         self.segmentKillEvent.set()
         self.acquireKillEvent.set()
+    
+class tweezerWindow(QMainWindow):
+
+    def __init__(self):
+        pass
 
 
 if __name__ == "__main__":

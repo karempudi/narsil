@@ -93,7 +93,11 @@ class MainWindow(QMainWindow):
 
         ############ viewer button ###############
 
+        # get button handler
+
+
         ############ statistics button ###########
+
 
     # signal catcher from setup window
     def receivedEvents(self, exptSettings):
@@ -189,7 +193,7 @@ class MainWindow(QMainWindow):
 
             # timer that update plots every few seconds
             self.timer = QTimer()
-            self.timer.setInterval(1000)
+            self.timer.setInterval(500)
             self.timer.timeout.connect(self.updateStatusPlots)
             self.timer.start()
 
