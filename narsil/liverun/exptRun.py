@@ -15,6 +15,7 @@ from narsil.liverun.utils import queueDataset, resizeOneImage, tensorizeOneImage
 from datetime import datetime
 from torch.utils.data import DataLoader, Dataset
 from narsil.segmentation.network import basicUnet, smallerUnet
+from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
 
 """
 ExptProcess class that creates runs all the processes and
@@ -170,6 +171,10 @@ class exptRun(object):
 
         sys.stdout.write("Acquire process completed successfully\n")
         sys.stdout.flush()
+
+    # just simulates the acquisition part to the full pipeline without the scope
+    def acquire_simulation(self):
+        pass
     
     def segment(self):
         # segmentation loop for both cell and channels
@@ -188,12 +193,10 @@ class exptRun(object):
                             time.sleep(2)
 
                         # segment here and cut channels and write the data to disk
-                        cellSegMask = self.cellSegNet(image)
+                        #cellSegMask = self.cellSegNet(image)
                         channelSegMask = self.channelSegNet(image)
-                        locations = self.findLocations(channelSegMask)
-
+                        #locations = self.findLocations(channelSegMask)
                         # Keep track of locaitons, barcodes in each image and stuff needed to go back and map
-
 
                         self.recordInDatabase('segment', {'time': data['time'], 'position': data['position']})
 
