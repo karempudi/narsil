@@ -30,9 +30,7 @@ class exptRun(object):
 
         # Image process parameters needed to be set
         # network model paths are also in imageProcessParameter
-
         self.imageProcessParameters = None
-
 
         # DB parameters that you get from GUI, used for writing data
         # in to the database
@@ -153,12 +151,15 @@ class exptRun(object):
             if con:
                 con.close()
 
-    def waitForPFS(self, ):
-        pass
+    def waitForPFS(self, event, bridge, event_queue):
+        # wait for focus before acquisition 
+        core = bridge.get_core()
+        core.full_focus()
+        return event
 
     def acquire(self):
 
-        with Acquisition(image_process_fn=partial(self.putImagesInSegQueue), debug=False) as acq:
+        with Acquisition(image_process_fn=partial(self.putImagesInSegQueue), post_hardware_hook_fn = self.waitForPFS, debug=False) as acq:
             acq.acquire(self.acquireEvents)
 
         while not self.acquireKillEvent.is_set():
