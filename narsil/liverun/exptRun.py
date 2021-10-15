@@ -11,11 +11,12 @@ from functools import partial
 from torchvision import transforms, utils
 from queue import Empty
 from pycromanager import Acquisition
-from narsil.liverun.utils import queueDataset, resizeOneImage, tensorizeOneImage
+from narsil.liverun.utils import queueDataset, resizeOneImage, tensorizeOneImage, normalize
 from datetime import datetime
 from torch.utils.data import DataLoader, Dataset
 from narsil.segmentation.network import basicUnet, smallerUnet
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
+from skimage import io
 
 """
 ExptProcess class that creates runs all the processes and
@@ -102,8 +103,9 @@ class exptRun(object):
         # operations on the images before processing
         self.phaseImageSize = (self.imageProcessParameters["imageHeight"], self.imageProcessParameters["imageWidth"])
         self.resize = resizeOneImage(self.phaseImageSize, self.phaseImageSize) 
+        self.normalize = normalize() 
         self.tensorize = tensorizeOneImage()
-        self.segTransforms = transforms.Compose([self.resize, self.tensorize])
+        self.segTransforms = transforms.Compose([self.resize, self.normalize, self.tensorize])
 
 
     def putImagesInSegQueue(self, image, metadata):
@@ -159,7 +161,7 @@ class exptRun(object):
 
     def acquire(self):
 
-        with Acquisition(image_process_fn=partial(self.putImagesInSegQueue), post_hardware_hook_fn = self.waitForPFS, debug=False) as acq:
+        with Acquisition(image_process_fn=partial(self.putImagesInSegQueue), debug=False) as acq:
             acq.acquire(self.acquireEvents)
 
         while not self.acquireKillEvent.is_set():
@@ -195,9 +197,16 @@ class exptRun(object):
 
                         # segment here and cut channels and write the data to disk
                         #cellSegMask = self.cellSegNet(image)
-                        channelSegMask = self.channelSegNet(image)
+                        channelSegMask = torch.sigmoid(self.channelSegNet(image)) > 0.9
                         #locations = self.findLocations(channelSegMask)
                         # Keep track of locaitons, barcodes in each image and stuff needed to go back and map
+                        channelSegMaskCpu = channelSegMask.cpu().detach().numpy().squeeze(0).squeeze(0) * 255.0
+                        channelMaskFilename = str(int(data['position'])) + "_" + str(int(data['time'])) + ".tiff"
+                        channelMaskFilename = Path(self.imageProcessParameters["saveDir"]) / channelMaskFilename
+                        sys.stdout.write(str(channelMaskFilename))
+                        sys.stdout.flush()
+                        io.imsave(channelMaskFilename, channelSegMaskCpu.astype('uint8'), compress=6, check_contrast=False,
+                                    plugin='tifffile')
 
                         self.recordInDatabase('segment', {'time': data['time'], 'position': data['position']})
 
@@ -228,7 +237,7 @@ class exptRun(object):
         self.createProcesses()
         self.acquireProcess.start()
         self.acquireProcess = None # set this to none so that the process context
-        # doesn't get copied as it is not picklable.
+        # doesn't get copied as it is not picklable
         self.segmentProcess.start()
     
     def stop(self):
@@ -239,7 +248,6 @@ class tweezerWindow(QMainWindow):
 
     def __init__(self):
         pass
-
 
 if __name__ == "__main__":
     print("Experiment Processes launch ...")

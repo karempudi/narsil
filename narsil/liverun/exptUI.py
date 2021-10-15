@@ -176,7 +176,8 @@ class MainWindow(QMainWindow):
             self.exptRun.imageProcessParameters = {'imageHeight': self.analysisSetupSettings["imageHeight"],
                                             'imageWidth': self.analysisSetupSettings["imageWidth"],
                                             'cellModelPath': self.analysisSetupSettings["cellSegNetModelPath"],
-                                            'channelModelPath': self.analysisSetupSettings["channelSegNetModelPath"]}
+                                            'channelModelPath': self.analysisSetupSettings["channelSegNetModelPath"],
+                                            'saveDir': self.analysisSetupSettings["saveDir"]}
             # run with default password, do user-password creation later 
             self.exptRun.dbParameters = {'dbname': self.database.dbname,
                                          'dbuser': 'postgres',
@@ -294,7 +295,7 @@ class ExptSetupWindow(QMainWindow):
         self.analysisSettings = {"cellNet": "normal", 
                     "channelSeg": None, "deadAlive": None, "growthRates": None,
                     "cellSegNetModelPath": None, "channelSegNetModelPath": None,
-                    "imageHeight": None, "imageWidth": None
+                    "imageHeight": None, "imageWidth": None, "saveDir": None,
                     }
 
     
@@ -342,6 +343,8 @@ class ExptSetupWindow(QMainWindow):
         self.ui.imageHeight.textChanged.connect(self.setImageHeight)
         # image width set
         self.ui.imageWidth.textChanged.connect(self.setImageWidth)
+        # set save Dir
+        self.ui.saveDirButton.clicked.connect(self.setSaveDir)
         # checkbox for channel segmentation
         self.ui.segChannels.stateChanged.connect(self.setChannelSegmentation)
         # deadAlive for rudimentary tracking
@@ -501,6 +504,20 @@ class ExptSetupWindow(QMainWindow):
         else:
             self.analysisSettings["channelSegNetModelPath"] = filename[0]
             print(f"Channel Seg model file: {self.analysisSettings['channelSegNetModelPath']}")
+        
+    def setSaveDir(self):
+        directory = QFileDialog.getExistingDirectory(self,
+                        self.tr("Open Directory for saving expt data"), '.', 
+                        QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
+                        )
+
+        if directory == '':
+            msg = QMessageBox()
+            msg.setText("Saving Directory set")
+            msg.exec()
+        else:
+            self.analysisSettings["saveDir"] = directory
+            print(f"Expt data save dir: {self.analysisSettings['saveDir']}")
 
     def setImageHeight(self):
         height = self.ui.imageHeight.text()

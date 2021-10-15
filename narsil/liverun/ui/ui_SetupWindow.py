@@ -112,7 +112,7 @@ class Ui_SetupWindow(object):
         self.validateExptSetupButton.setGeometry(QRect(260, 200, 171, 23))
         self.analysisSetupBox = QGroupBox(self.centralwidget)
         self.analysisSetupBox.setObjectName(u"analysisSetupBox")
-        self.analysisSetupBox.setGeometry(QRect(30, 240, 541, 271))
+        self.analysisSetupBox.setGeometry(QRect(30, 240, 541, 291))
         self.horizontalLayoutWidget = QWidget(self.analysisSetupBox)
         self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
         self.horizontalLayoutWidget.setGeometry(QRect(10, 20, 431, 31))
@@ -133,7 +133,7 @@ class Ui_SetupWindow(object):
 
         self.horizontalLayoutWidget_7 = QWidget(self.analysisSetupBox)
         self.horizontalLayoutWidget_7.setObjectName(u"horizontalLayoutWidget_7")
-        self.horizontalLayoutWidget_7.setGeometry(QRect(10, 170, 431, 31))
+        self.horizontalLayoutWidget_7.setGeometry(QRect(10, 190, 431, 31))
         self.channelSegLayout = QHBoxLayout(self.horizontalLayoutWidget_7)
         self.channelSegLayout.setObjectName(u"channelSegLayout")
         self.channelSegLayout.setContentsMargins(0, 0, 0, 0)
@@ -144,7 +144,7 @@ class Ui_SetupWindow(object):
 
         self.horizontalLayoutWidget_8 = QWidget(self.analysisSetupBox)
         self.horizontalLayoutWidget_8.setObjectName(u"horizontalLayoutWidget_8")
-        self.horizontalLayoutWidget_8.setGeometry(QRect(10, 200, 431, 31))
+        self.horizontalLayoutWidget_8.setGeometry(QRect(10, 220, 431, 31))
         self.cellAnalysisLayout = QHBoxLayout(self.horizontalLayoutWidget_8)
         self.cellAnalysisLayout.setObjectName(u"cellAnalysisLayout")
         self.cellAnalysisLayout.setContentsMargins(0, 0, 0, 0)
@@ -160,10 +160,10 @@ class Ui_SetupWindow(object):
 
         self.validateAnalysisSetupButton = QPushButton(self.analysisSetupBox)
         self.validateAnalysisSetupButton.setObjectName(u"validateAnalysisSetupButton")
-        self.validateAnalysisSetupButton.setGeometry(QRect(290, 240, 131, 23))
+        self.validateAnalysisSetupButton.setGeometry(QRect(290, 260, 131, 23))
         self.formLayoutWidget = QWidget(self.analysisSetupBox)
         self.formLayoutWidget.setObjectName(u"formLayoutWidget")
-        self.formLayoutWidget.setGeometry(QRect(10, 60, 431, 125))
+        self.formLayoutWidget.setGeometry(QRect(10, 54, 431, 141))
         self.imageSegLayout = QFormLayout(self.formLayoutWidget)
         self.imageSegLayout.setObjectName(u"imageSegLayout")
         self.imageSegLayout.setContentsMargins(0, 0, 0, 0)
@@ -207,9 +207,19 @@ class Ui_SetupWindow(object):
 
         self.imageSegLayout.setWidget(2, QFormLayout.LabelRole, self.imageHeightLabel)
 
+        self.savePathLabel = QLabel(self.formLayoutWidget)
+        self.savePathLabel.setObjectName(u"savePathLabel")
+
+        self.imageSegLayout.setWidget(5, QFormLayout.LabelRole, self.savePathLabel)
+
+        self.saveDirButton = QPushButton(self.formLayoutWidget)
+        self.saveDirButton.setObjectName(u"saveDirButton")
+
+        self.imageSegLayout.setWidget(5, QFormLayout.FieldRole, self.saveDirButton)
+
         self.horizontalLayoutWidget_2 = QWidget(self.centralwidget)
         self.horizontalLayoutWidget_2.setObjectName(u"horizontalLayoutWidget_2")
-        self.horizontalLayoutWidget_2.setGeometry(QRect(260, 510, 221, 51))
+        self.horizontalLayoutWidget_2.setGeometry(QRect(250, 530, 221, 51))
         self.exptSaveCloseButtons = QHBoxLayout(self.horizontalLayoutWidget_2)
         self.exptSaveCloseButtons.setObjectName(u"exptSaveCloseButtons")
         self.exptSaveCloseButtons.setContentsMargins(0, 0, 0, 0)
@@ -267,6 +277,8 @@ class Ui_SetupWindow(object):
         self.channelSegNetFilePathButton.setText(QCoreApplication.translate("SetupWindow", u"Select Channel SegNet model file", None))
         self.imageWidthLabel.setText(QCoreApplication.translate("SetupWindow", u"Image Width:", None))
         self.imageHeightLabel.setText(QCoreApplication.translate("SetupWindow", u"Image Height:", None))
+        self.savePathLabel.setText(QCoreApplication.translate("SetupWindow", u"Save Path:", None))
+        self.saveDirButton.setText(QCoreApplication.translate("SetupWindow", u"Select directory for saving", None))
         self.resetExptSetupButton.setText(QCoreApplication.translate("SetupWindow", u"Reset", None))
         self.closeExptSetupButton.setText(QCoreApplication.translate("SetupWindow", u"Close", None))
     # retranslateUi

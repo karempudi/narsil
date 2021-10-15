@@ -41,6 +41,11 @@ class tensorizeOneImage(object):
 			imgTensor = imgTensor.unsqueeze(0)
 		return imgTensor
 
+class normalize(object):
+	
+	def __call__(self, phaseImage):
+		return (phaseImage - np.mean(phaseImage)) / np.std(phaseImage)
+
 
 """
 Gerenric queue for yielding objects from the queue in a safe way to be

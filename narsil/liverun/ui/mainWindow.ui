@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>904</width>
-    <height>858</height>
+    <width>947</width>
+    <height>902</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -65,7 +65,7 @@
     <property name="title">
      <string>Viewer</string>
     </property>
-    <widget class="QLabel" name="label_5">
+    <widget class="QLabel" name="viewerPositionLabel">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -83,7 +83,7 @@
       <string>Position:</string>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit">
+    <widget class="QLineEdit" name="viewerPositionNo">
      <property name="geometry">
       <rect>
        <x>70</x>
@@ -93,7 +93,7 @@
       </rect>
      </property>
     </widget>
-    <widget class="QLabel" name="label_6">
+    <widget class="QLabel" name="viewerChannelLabel">
      <property name="geometry">
       <rect>
        <x>200</x>
@@ -106,7 +106,7 @@
       <string>Channel No:</string>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_2">
+    <widget class="QLineEdit" name="viewerChannelNo">
      <property name="geometry">
       <rect>
        <x>270</x>
@@ -116,7 +116,7 @@
       </rect>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton">
+    <widget class="QPushButton" name="viewerGetButton">
      <property name="geometry">
       <rect>
        <x>410</x>
@@ -483,7 +483,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>904</width>
+     <width>947</width>
      <height>21</height>
     </rect>
    </property>
