@@ -30,10 +30,16 @@ class resizeOneImage(object):
 		return image
 
 class tensorizeOneImage(object):
+
+	def __init__(self, numUnSqueezes=1):
+		self.numUnSqueezes = numUnSqueezes
 	
 	def __call__(self, phaseImage):
 		phaseImage = phaseImage.astype('float32')
-		return torch.from_numpy(phaseImage).unsqueeze(0)
+		imgTensor = torch.from_numpy(phaseImage)
+		for i in range(self.numUnSqueezes):
+			imgTensor = imgTensor.unsqueeze(0)
+		return imgTensor
 
 
 """
