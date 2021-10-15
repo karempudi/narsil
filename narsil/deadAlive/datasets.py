@@ -7,7 +7,7 @@ class channelStackTrain(object):
 
     def __init__(self, phaseDirectoriesList, numUnrolls, fileformat='.tiff'):
         self.numUnrolls = numUnrolls
-        self.phaseDirectoriesList = phaseDirectoriesLIst
+        self.phaseDirectoriesList = phaseDirectoriesList
         self.fileformat = fileformat
         self.dataSequences = []
         self.construct_dataset()
