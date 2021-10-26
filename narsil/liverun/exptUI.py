@@ -24,7 +24,7 @@ from narsil.liverun.ui.ui_MainWindow import Ui_MainWindow
 from narsil.liverun.ui.ui_EventsWindow import Ui_EventsWindow
 from narsil.liverun.ui.ui_SetupWindow import Ui_SetupWindow
 from narsil.liverun.exptDatabase import exptDatabase
-from narsil.liverun.exptRun import exptRun
+from narsil.liverun.exptRun import exptRun, runProcesses
 
 class MainWindow(QMainWindow):
 
@@ -186,7 +186,8 @@ class MainWindow(QMainWindow):
                                         }
             self.exptRun.setImageTransforms()
 
-            self.exptRun.run()
+            #self.exptRun.run()
+            runProcesses(self.exptRun)
             sys.stdout.write("Expt setup is ok .. Running now ...\n")
             sys.stdout.flush()
 

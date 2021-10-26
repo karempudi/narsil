@@ -41,9 +41,9 @@ class exptRun(object):
         self.segmentQueue = tmp.Queue()
         self.deadaliveQueue = tmp.Queue()
 
-        self.acquireProcess = None
-        self.segmentProcess = None
-        self.deadAliveProcess = None
+        #self.acquireProcess = None
+        #self.segmentProcess = None
+        #self.deadAliveProcess = None
 
         self.acquireKillEvent = tmp.Event()
         self.segmentKillEvent = tmp.Event()
@@ -58,12 +58,12 @@ class exptRun(object):
         self.cellSegNet = None
         self.channelSegNet = None
     
-    def createProcesses(self):
-        # all the stuff needed to for processing functions
-        # like the networks used etc
-        self.acquireProcess = tmp.Process(target=self.acquire, name='acquireProcess')
-        self.segmentProcess = tmp.Process(target=self.segment, name='segmentProcess')
-        self.deadAliveProcess = tmp.Process(target=self.deadalive, name='deadaliveProcess')
+    #def createProcesses(self):
+    #    # all the stuff needed to for processing functions
+    #    # like the networks used etc
+    #    self.acquireProcess = tmp.Process(target=self.acquire, name='acquireProcess')
+    #    self.segmentProcess = tmp.Process(target=self.segment, name='segmentProcess')
+    #    self.deadAliveProcess = tmp.Process(target=self.deadalive, name='deadaliveProcess')
 
 
     def loadNets(self):
@@ -159,6 +159,21 @@ class exptRun(object):
         core.full_focus()
         return event
 
+    # fake acquiring outside to test positions  
+    def acquireFake(self):
+        while not self.acquireKillEvent.is_set():
+            try:
+                # pipe an image and meta data to the putImagesInSegQueue
+
+                time.sleep(3)
+            except KeyboardInterrupt:
+                self.acquireKillEvent.set()
+                sys.stdout.write("AcquireFake process interrupted using keyboard\n")
+                sys.stdout.flush()
+        
+        sys.stdout.write("AcquireFake process completed successfully")
+        sys.stdout.flush()
+
     def acquire(self):
 
         with Acquisition(image_process_fn=partial(self.putImagesInSegQueue), debug=False) as acq:
@@ -243,7 +258,21 @@ class exptRun(object):
     def stop(self):
         self.segmentKillEvent.set()
         self.acquireKillEvent.set()
+
+    # if it fails write the state and bail, and use this state to restart after adjusting 
+    def savedState(self):
+        pass
     
+def runProcesses(exptRunObject):
+    exptRunObject.loadNets()
+    exptRunObject.acquireKillEvent.clear()
+    acquireProcess = tmp.Process(target=exptRunObject.acquire, name='Acquire Process')
+    acquireProcess.start()
+
+    exptRunObject.segmentKillEvent.clear()
+    segmentProcess = tmp.Process(target=exptRunObject.segment, name='Segment Process')
+    segmentProcess.start()
+
 class tweezerWindow(QMainWindow):
 
     def __init__(self):
