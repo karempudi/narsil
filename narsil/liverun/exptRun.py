@@ -19,6 +19,7 @@ from narsil.segmentation.network import basicUnet, smallerUnet
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
 from skimage import io
 from datetime import datetime
+from scipy.signal import find_peaks
 
 """
 ExptProcess class that creates runs all the processes and
@@ -59,6 +60,16 @@ class exptRun(object):
 
         self.cellSegNet = None
         self.channelSegNet = None
+
+        self.channelProcessParameters = {
+            'segThreshold': 0.9,
+            'minPeaksDistance': 25,
+            'barcodeWidth': 48,
+            'minChannelLength':100,
+            'rowThreshold': 10000,
+            'channelRowLocations': [400, 1200],
+            'barcodeLength': 800
+        }
     
     #def createProcesses(self):
     #    # all the stuff needed to for processing functions
@@ -211,9 +222,63 @@ class exptRun(object):
         sys.stdout.write("Acquire process completed successfully\n")
         sys.stdout.flush()
 
-    # just simulates the acquisition part to the full pipeline without the scope
-    def acquire_simulation(self):
+    # return the number of channels detected, locations to write to database 
+    # assume it is one image per batch
+    # TODO: batching of images done later
+    def processChannels(self, image, position, time):
+
+        # pass through net and get the results
+        channelSegMask = torch.sigmoid(self.channelSegNet(image)) > self.channelProcessParameters['segThreshold']
+
+        # sent to cpu and saved according to position and timepoint
+        channelSegMaskCpu = channelSegMask.cpu().detach().numpy().squeeze(0).squeeze(0) * 255.0
+        channelMaskFilename = str(position) + "_" + str(time) + ".tiff"
+        channelMaskFilename = Path(self.imageProcessParameters["saveDir"]) / channelMaskFilename
+        io.imsave(channelMaskFilename, channelSegMaskCpu.astype('uint8'), compress=6, check_contrast=False,
+                    plugin='tifffile')
+
+
+        # grab locations of barcode # will be used for checking with 100x images later
+        hist = np.sum(channelSegMask, axis = 0) > self.channelProcessParameters['minChannelLength']
+        peaks, _ = find_peaks(hist, distance = self.channelProcessParamters['minPeaksDistance'])
+        indices_with_larger_gaps = np.where(np.ediff1d(peaks) > barcodeWidth)[0]
+
+        # there are locaitons of the channel before and after the the gap
+        locations_before_barcode = peaks[indices_with_larger_gaps]
+        locations_after_barcode = peaks[indices_with_larger_gaps + 1]
+
+        # take the mean of the locations to get the center, convert to int (from uint) for the next steps
+        locations_barcode = np.rint(np.mean((locations_before_barcode,
+                         locations_after_barcode), axis=0)).astype('int')
+
+        sum_rows = np.sum(channelSegMaskCpu, axis = 1).astype('int')
+        row_locations = np.argwhere(np.diff(np.sign(sum_rows - self.channelProcessParamters['rowThreshold']))).flatten()
+
+        if len(row_locations) != 2:
+            row_x1 = self.channelProcessParamters['channelRowLocations'][0]
+            row_x2 = self.channelProcessParamters['channelRowLocations'][1]
+        else:
+            row_x1 = row_locations[0]
+            row_x2 = row_x1 + self.channelProcessParameters['barcodeLength']
+
+        # grab barcode and then grab the channels in each image and write
+        barcodeImages = []
+        phase_img = image.cpu().detach().numpy().squeeze(0).squeeze(0)
+        barcodeWidth = self.channelProcessParamters['barcodeWidth']
+        for location in locations_barcode:
+            barcode_img = image[row_x1:row_x1, location - barcodeWidth//2: location + barcodeWidth//2]
+            barcodeImages.append(barcode_img)
+        
+        # grab channels between barcodes
+        # TODO:
+
+
+        sys.stdout.write(str(channelMaskFilename) + "\n")
+        sys.stdout.flush()
+
+    def processCells(self, image):
         pass
+    
     
     def segment(self):
         # segmentation loop for both cell and channels
@@ -228,18 +293,7 @@ class exptRun(object):
                         image = data['image'].to(self.device)
                         if image == None:
                             time.sleep(2)
-                        # segment here and cut channels and write the data to disk
-                        #cellSegMask = self.cellSegNet(image)
-                        channelSegMask = torch.sigmoid(self.channelSegNet(image)) > 0.9
-                        #locations = self.findLocations(channelSegMask)
-                        # Keep track of locaitons, barcodes in each image and stuff needed to go back and map
-                        channelSegMaskCpu = channelSegMask.cpu().detach().numpy().squeeze(0).squeeze(0) * 255.0
-                        channelMaskFilename = str(int(data['position'])) + "_" + str(int(data['time'])) + ".tiff"
-                        channelMaskFilename = Path(self.imageProcessParameters["saveDir"]) / channelMaskFilename
-                        io.imsave(channelMaskFilename, channelSegMaskCpu.astype('uint8'), compress=6, check_contrast=False,
-                                    plugin='tifffile')
-                        sys.stdout.write(str(channelMaskFilename) + "\n")
-                        sys.stdout.flush()
+                        self.processChannels(image, int(data['position']), int(data['time']))
 
                         self.recordInDatabase('segment', {'time': data['time'], 'position': data['position']})
                         sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
