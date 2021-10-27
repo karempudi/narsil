@@ -6,6 +6,7 @@ import argparse
 import os
 import sys
 import time
+import math
 from pathlib import Path
 from functools import partial
 from torchvision import transforms, utils
@@ -17,6 +18,7 @@ from torch.utils.data import DataLoader, Dataset
 from narsil.segmentation.network import basicUnet, smallerUnet
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
 from skimage import io
+from datetime import datetime
 
 """
 ExptProcess class that creates runs all the processes and
@@ -161,11 +163,30 @@ class exptRun(object):
 
     # fake acquiring outside to test positions  
     def acquireFake(self):
+
+        testDataDir = Path("C:\\Users\\Praneeth\\Documents\\Elflab\\Code\\testdata\\hetero40x")
+        for event in self.acquireEvents:
+            print(f"{event['axes']['position']} -- {event['axes']['time']}")
+            positionStr = "Pos10" + str(event['axes']['position'])
+            imgName = imgFilenameFromNumber(int(event['axes']['time']))
+            channelName = str(event['channel']['config'])
+            imagePath = testDataDir / positionStr / channelName/ imgName
+            #print(event)
+            metadata  = {
+                'Axes': {'position': int(event['axes']['position']), 
+                         'time' : int(event['axes']['time'])},
+                'Time': str(datetime.now())
+            }
+            img = io.imread(imagePath)
+            self.putImagesInSegQueue(img, metadata)
+            print(imagePath)
+            print("--------")
+
+            time.sleep(3)
+
         while not self.acquireKillEvent.is_set():
             try:
-                # pipe an image and meta data to the putImagesInSegQueue
-
-                time.sleep(3)
+                time.sleep(2)
             except KeyboardInterrupt:
                 self.acquireKillEvent.set()
                 sys.stdout.write("AcquireFake process interrupted using keyboard\n")
@@ -205,11 +226,8 @@ class exptRun(object):
                 with torch.no_grad():
                     for data in dataloader:
                         image = data['image'].to(self.device)
-                        sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
-                        sys.stdout.flush()
                         if image == None:
                             time.sleep(2)
-
                         # segment here and cut channels and write the data to disk
                         #cellSegMask = self.cellSegNet(image)
                         channelSegMask = torch.sigmoid(self.channelSegNet(image)) > 0.9
@@ -218,12 +236,14 @@ class exptRun(object):
                         channelSegMaskCpu = channelSegMask.cpu().detach().numpy().squeeze(0).squeeze(0) * 255.0
                         channelMaskFilename = str(int(data['position'])) + "_" + str(int(data['time'])) + ".tiff"
                         channelMaskFilename = Path(self.imageProcessParameters["saveDir"]) / channelMaskFilename
-                        sys.stdout.write(str(channelMaskFilename))
-                        sys.stdout.flush()
                         io.imsave(channelMaskFilename, channelSegMaskCpu.astype('uint8'), compress=6, check_contrast=False,
                                     plugin='tifffile')
+                        sys.stdout.write(str(channelMaskFilename) + "\n")
+                        sys.stdout.flush()
 
                         self.recordInDatabase('segment', {'time': data['time'], 'position': data['position']})
+                        sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
+                        sys.stdout.flush()
 
             except Empty:
                 sys.stdout.write("Segmentation queue is empty .. but process shutdown is not happening\n")
@@ -266,12 +286,22 @@ class exptRun(object):
 def runProcesses(exptRunObject):
     exptRunObject.loadNets()
     exptRunObject.acquireKillEvent.clear()
-    acquireProcess = tmp.Process(target=exptRunObject.acquire, name='Acquire Process')
+    acquireProcess = tmp.Process(target=exptRunObject.acquireFake, name='Acquire Process')
     acquireProcess.start()
 
     exptRunObject.segmentKillEvent.clear()
     segmentProcess = tmp.Process(target=exptRunObject.segment, name='Segment Process')
     segmentProcess.start()
+
+# In the datasets image names are img_000000000.tiff format.
+def imgFilenameFromNumber(number):
+    if number == 0:
+        num_digits = 1
+    else:
+        num_digits = int(math.log10(number)) + 1
+    imgFilename = 'img_' + '0' * (9 - num_digits) + str(number) + '.tiff'
+    return imgFilename
+
 
 class tweezerWindow(QMainWindow):
 
