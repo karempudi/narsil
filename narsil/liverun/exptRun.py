@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialo
 from skimage import io
 from datetime import datetime
 from scipy.signal import find_peaks
+import numpy as np
 
 """
 ExptProcess class that creates runs all the processes and
@@ -222,6 +223,13 @@ class exptRun(object):
         sys.stdout.write("Acquire process completed successfully\n")
         sys.stdout.flush()
 
+    # do all the writing to file system using this function,
+    # abstract out the logic for different cases 
+    def writeFile(self, image, type, position, time, channelNo=None):
+        pass
+
+
+
     # return the number of channels detected, locations to write to database 
     # assume it is one image per batch
     # TODO: batching of images done later
@@ -239,9 +247,9 @@ class exptRun(object):
 
 
         # grab locations of barcode # will be used for checking with 100x images later
-        hist = np.sum(channelSegMask, axis = 0) > self.channelProcessParameters['minChannelLength']
-        peaks, _ = find_peaks(hist, distance = self.channelProcessParamters['minPeaksDistance'])
-        indices_with_larger_gaps = np.where(np.ediff1d(peaks) > barcodeWidth)[0]
+        hist = np.sum(channelSegMaskCpu, axis = 0) > self.channelProcessParameters['minChannelLength']
+        peaks, _ = find_peaks(hist, distance = self.channelProcessParameters['minPeaksDistance'])
+        indices_with_larger_gaps = np.where(np.ediff1d(peaks) > self.channelProcessParameters['barcodeWidth'])[0]
 
         # there are locaitons of the channel before and after the the gap
         locations_before_barcode = peaks[indices_with_larger_gaps]
@@ -252,11 +260,11 @@ class exptRun(object):
                          locations_after_barcode), axis=0)).astype('int')
 
         sum_rows = np.sum(channelSegMaskCpu, axis = 1).astype('int')
-        row_locations = np.argwhere(np.diff(np.sign(sum_rows - self.channelProcessParamters['rowThreshold']))).flatten()
+        row_locations = np.argwhere(np.diff(np.sign(sum_rows - self.channelProcessParameters['rowThreshold']))).flatten()
 
         if len(row_locations) != 2:
-            row_x1 = self.channelProcessParamters['channelRowLocations'][0]
-            row_x2 = self.channelProcessParamters['channelRowLocations'][1]
+            row_x1 = self.channelProcessParameters['channelRowLocations'][0]
+            row_x2 = self.channelProcessParameters['channelRowLocations'][1]
         else:
             row_x1 = row_locations[0]
             row_x2 = row_x1 + self.channelProcessParameters['barcodeLength']
@@ -264,19 +272,20 @@ class exptRun(object):
         # grab barcode and then grab the channels in each image and write
         barcodeImages = []
         phase_img = image.cpu().detach().numpy().squeeze(0).squeeze(0)
-        barcodeWidth = self.channelProcessParamters['barcodeWidth']
+        barcodeWidth = self.channelProcessParameters['barcodeWidth']
         for location in locations_barcode:
             barcode_img = image[row_x1:row_x1, location - barcodeWidth//2: location + barcodeWidth//2]
             barcodeImages.append(barcode_img)
         
-        # grab channels between barcodes
+        # grab channels between barcodes and record the info in database
         # TODO:
 
 
         sys.stdout.write(str(channelMaskFilename) + "\n")
+        sys.stdout.write(f"No of barcode regions detected: {len(barcodeImages)}\n")
         sys.stdout.flush()
 
-    def processCells(self, image):
+    def processCells(self, image, position, time):
         pass
     
     
