@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialo
 from skimage import io
 from datetime import datetime
 from scipy.signal import find_peaks
+from skimage.morphology import remove_small_objects
 import numpy as np
 
 """
@@ -69,7 +70,8 @@ class exptRun(object):
             'minChannelLength':100,
             'rowThreshold': 10000,
             'channelRowLocations': [400, 1200],
-            'barcodeLength': 800
+            'barcodeLength': 800,
+            'smallObjectsArea': 64
         }
     
     #def createProcesses(self):
@@ -225,10 +227,43 @@ class exptRun(object):
 
     # do all the writing to file system using this function,
     # abstract out the logic for different cases 
-    def writeFile(self, image, type, position, time, channelNo=None):
-        pass
+    def writeFile(self, image, imageType, position, time, channelNo=None):
+        # construct directories if they are not there
+        mainAnalysisDir = Path(self.imageProcessParameters["saveDir"])
+        if imageType == 'cellSegmentation':
+            
+            #io.imsave(cellMaskFilename, image.astype('uint8'), compress=6, check_contrast=False,
+            #        plugin='tifffile')
+            pass
+        elif imageType == 'channelSegmentation':
+            # construct filename
+            filename = str(time) + '.tiff'
+            positionDir = str(position)
+            channelMaskDir = mainAnalysisDir / positionDir / imageType 
+            if not channelMaskDir.exists():
+                channelMaskDir.mkdir(parents=True, exist_ok=True)
 
-
+            channelMaskFilename = channelMaskDir / filename
+            image = image * 255
+            io.imsave(channelMaskFilename, image.astype('uint8'), compress=6, check_contrast=False,
+                        plugin='tifffile')
+            sys.stdout.write(str(channelMaskFilename) + " written \n")
+            sys.stdout.flush()
+        elif imageType == 'oneChannelCells':
+            pass
+        elif imageType == 'barcodes':
+            # you get a list of images instead of one image
+            positionDir = str(position)
+            barcodesDir = mainAnalysisDir / positionDir/ imageType
+            if not barcodesDir.exists():
+                barcodesDir.mkdir(parents=True, exist_ok=True)
+            for i, oneBarcode in enumerate(image, 0):
+                filename = str(time) + "_" + str(i) + '.jpg' 
+                oneBarcodeFilename = barcodesDir / filename
+                io.imsave(oneBarcodeFilename, oneBarcode, check_contrast=False,
+                        plugin='tifffile')
+            sys.stdout.write(f"{len(image)} barcodes written to disk \n")
+            sys.stdout.flush()
 
     # return the number of channels detected, locations to write to database 
     # assume it is one image per batch
@@ -239,12 +274,16 @@ class exptRun(object):
         channelSegMask = torch.sigmoid(self.channelSegNet(image)) > self.channelProcessParameters['segThreshold']
 
         # sent to cpu and saved according to position and timepoint
-        channelSegMaskCpu = channelSegMask.cpu().detach().numpy().squeeze(0).squeeze(0) * 255.0
-        channelMaskFilename = str(position) + "_" + str(time) + ".tiff"
-        channelMaskFilename = Path(self.imageProcessParameters["saveDir"]) / channelMaskFilename
-        io.imsave(channelMaskFilename, channelSegMaskCpu.astype('uint8'), compress=6, check_contrast=False,
-                    plugin='tifffile')
+        channelSegMaskCpu = channelSegMask.cpu().detach().numpy().squeeze(0).squeeze(0)
+        #channelMaskFilename = str(position) + "_" + str(time) + ".tiff"
+        #channelMaskFilename = Path(self.imageProcessParameters["saveDir"]) / channelMaskFilename
+        #io.imsave(channelMaskFilename, channelSegMaskCpu.astype('uint8'), compress=6, check_contrast=False,
+        #            plugin='tifffile')
 
+        # need to remove smaller objects of the artifacts
+        channelSegMaskCpu = remove_small_objects(channelSegMaskCpu.astype('bool'), min_size = self.channelProcessParameters['smallObjectsArea'])
+
+        self.writeFile(channelSegMaskCpu, 'channelSegmentation', position, time)
 
         # grab locations of barcode # will be used for checking with 100x images later
         hist = np.sum(channelSegMaskCpu, axis = 0) > self.channelProcessParameters['minChannelLength']
@@ -274,14 +313,20 @@ class exptRun(object):
         phase_img = image.cpu().detach().numpy().squeeze(0).squeeze(0)
         barcodeWidth = self.channelProcessParameters['barcodeWidth']
         for location in locations_barcode:
-            barcode_img = image[row_x1:row_x1, location - barcodeWidth//2: location + barcodeWidth//2]
+            barcode_img = phase_img[row_x1:row_x2, location - barcodeWidth//2: location + barcodeWidth//2]
+            sys.stdout.write(f"{barcode_img.shape}")
+            sys.stdout.flush()
             barcodeImages.append(barcode_img)
+
+        # stack the barcode and write all at the same time
+        self.writeFile(barcodeImages, 'barcodes', position, time)
+        # call to write using barcode image type
         
+        # find the peaks and write the the channel crops to file system
         # grab channels between barcodes and record the info in database
         # TODO:
 
 
-        sys.stdout.write(str(channelMaskFilename) + "\n")
         sys.stdout.write(f"No of barcode regions detected: {len(barcodeImages)}\n")
         sys.stdout.flush()
 
@@ -365,6 +410,8 @@ def imgFilenameFromNumber(number):
     imgFilename = 'img_' + '0' * (9 - num_digits) + str(number) + '.tiff'
     return imgFilename
 
+def identifyChannels(peaks, locations_barcode):
+    pass
 
 class tweezerWindow(QMainWindow):
 
