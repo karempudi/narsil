@@ -122,7 +122,7 @@ class exptDatabase(object):
                 elif table == 'segment':
                     cur.execute("""CREATE TABLE segment
                             (id SERIAl PRIMARY KEY, time TIMESTAMP, position INT, timepoint INT,
-                            segmentedpath VARCHAR, rawpath VARCHAR, locations BYTEA)
+                            segmentedpath VARCHAR, rawpath VARCHAR, locations BYTEA, numchannels INT)
                             """)
                     sys.stdout.write(f"Table {table} is created ...\n")
                 elif table == 'deadalive':

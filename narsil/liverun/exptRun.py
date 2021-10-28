@@ -160,9 +160,9 @@ class exptRun(object):
                             VALUES (%s, %s, %s)""", (datetime.now(), int(data['Axes']['position']),
                             int(data['Axes']['time']),))
             elif tableName == 'segment':
-                cur.execute("""INSERT INTO segment (time, position, timepoint)
-                            VALUES (%s, %s, %s)""", (datetime.now(), int(data['position']),
-                            int(data['time']),))
+                cur.execute("""INSERT INTO segment (time, position, timepoint, numchannels)
+                            VALUES (%s, %s, %s, %s)""", (datetime.now(), int(data['position']),
+                            int(data['time']), data['numchannels'],))
 
         except pgdatabase.DatabaseError as e:
             sys.stderr.write(f"Error in writing to database: {e}")
@@ -328,6 +328,19 @@ class exptRun(object):
         if channelLocations != None:
             sys.stdout.write(f"No of channels identified: {len(channelLocations)}\n")
             sys.stdout.flush()
+        
+        dataToDatabase = {
+            'time': time,
+            'position': position,
+            'locations': list(channelLocations),
+            'numchannels': len(channelLocations)
+        }
+
+        self.recordInDatabase('segment', dataToDatabase)
+
+        sys.stdout.write("\n ---------\n")
+        sys.stdout.flush()
+
 
     def processCells(self, image, position, time):
         pass
@@ -348,9 +361,8 @@ class exptRun(object):
                             time.sleep(2)
                         self.processChannels(image, int(data['position']), int(data['time']))
 
-                        self.recordInDatabase('segment', {'time': data['time'], 'position': data['position']})
-                        sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
-                        sys.stdout.flush()
+                        #sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
+                        #sys.stdout.flush()
 
             except Empty:
                 sys.stdout.write("Segmentation queue is empty .. but process shutdown is not happening\n")
