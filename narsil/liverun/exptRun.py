@@ -71,7 +71,9 @@ class exptRun(object):
             'rowThreshold': 10000,
             'channelRowLocations': [400, 1200],
             'barcodeLength': 800,
-            'smallObjectsArea': 64
+            'smallObjectsArea': 64,
+            'magnification': 40,
+            'channelsPerBlock': 21
         }
     
     #def createProcesses(self):
@@ -275,10 +277,6 @@ class exptRun(object):
 
         # sent to cpu and saved according to position and timepoint
         channelSegMaskCpu = channelSegMask.cpu().detach().numpy().squeeze(0).squeeze(0)
-        #channelMaskFilename = str(position) + "_" + str(time) + ".tiff"
-        #channelMaskFilename = Path(self.imageProcessParameters["saveDir"]) / channelMaskFilename
-        #io.imsave(channelMaskFilename, channelSegMaskCpu.astype('uint8'), compress=6, check_contrast=False,
-        #            plugin='tifffile')
 
         # need to remove smaller objects of the artifacts
         channelSegMaskCpu = remove_small_objects(channelSegMaskCpu.astype('bool'), min_size = self.channelProcessParameters['smallObjectsArea'])
@@ -314,21 +312,22 @@ class exptRun(object):
         barcodeWidth = self.channelProcessParameters['barcodeWidth']
         for location in locations_barcode:
             barcode_img = phase_img[row_x1:row_x2, location - barcodeWidth//2: location + barcodeWidth//2]
-            sys.stdout.write(f"{barcode_img.shape}")
-            sys.stdout.flush()
             barcodeImages.append(barcode_img)
-
         # stack the barcode and write all at the same time
         self.writeFile(barcodeImages, 'barcodes', position, time)
-        # call to write using barcode image type
-        
+        sys.stdout.write(f"No of barcode regions detected: {len(barcodeImages)}\n")
+        sys.stdout.flush()
+
         # find the peaks and write the the channel crops to file system
         # grab channels between barcodes and record the info in database
         # TODO:
-
-
-        sys.stdout.write(f"No of barcode regions detected: {len(barcodeImages)}\n")
-        sys.stdout.flush()
+        channelLocations = identifyChannels(peaks, locations_barcode,
+                             magnification=self.channelProcessParameters['magnification'],
+                             channelsPerBlock=self.channelProcessParameters['channelsPerBlock']) 
+        
+        if channelLocations != None:
+            sys.stdout.write(f"No of channels identified: {len(channelLocations)}\n")
+            sys.stdout.flush()
 
     def processCells(self, image, position, time):
         pass
@@ -410,8 +409,78 @@ def imgFilenameFromNumber(number):
     imgFilename = 'img_' + '0' * (9 - num_digits) + str(number) + '.tiff'
     return imgFilename
 
-def identifyChannels(peaks, locations_barcode):
-    pass
+def identifyChannels(peaks, locations_barcode, magnification=40, channelsPerBlock=21):
+    # peaks will be the indices of the peaks you get from the channel segmentation mask histogram
+    # The goal is to identify blocks of channels in them and mark the peaks that belong to the 
+    # channels that you want in your analysis
+
+    # You will have to write different cases for different magnifications ofcourse
+    channels = []
+    if magnification == 40:
+        num_barcodes = len(locations_barcode)
+        
+        # if there are 6 barcodes in the image, it means, you can 
+        # clearly see 5 blocks. go grab all of them
+        if num_barcodes == 6:
+            for i in range(1, num_barcodes):
+                indices = np.where(np.logical_and(peaks > locations_barcode[i-1],
+                                                peaks < locations_barcode[i]))[0]
+                channels.extend(list(peaks[indices]))
+        
+        # if there are only 5, it is possible there are 3-4 sitations
+        # and we grab the locaitons for each situation differently
+
+        elif num_barcodes == 5:
+            
+            # if one of these is channelsPerBlock, then we can grab it entirely
+            indices_before = np.where(peaks < locations_barcode[0])[0]
+            indices_after = np.where(peaks > locations_barcode[-1])[0]
+            
+            # grabbing peaks when a full block is before the first barcode
+            if len(indices_before) == channelsPerBlock:
+                for i in range(0, num_barcodes):
+                    if(i == 0):
+                        indices = np.where(peaks < locations_barcode[i])[0]
+                    else:
+                        indices = np.where(np.logical_and(peaks > locations_barcode[i-1],
+                                                        peaks < locations_barcode[i]))[0]
+                    channels.extend(list(peaks[indices]))
+
+            # grabbing peaks when a full block is after the last barcode
+            elif len(indices_after) == channelsPerBlock:
+
+                for i in range(0, num_barcodes):
+                    if(i == num_barcodes - 1):
+                        indices = np.where(peaks > locations_barcode[i])[0]
+                    else:
+                        indices = np.where(np.logical_and(peaks > locations_barcode[i],
+                                                        peaks < locations_barcode[i+1]))[0]
+                        
+                    channels.extend(list(peaks[indices]))
+            # if you don't have full block on either side of the first or last barcode
+            # you are in an unfortunate situation where you can only grab 4 block reliably
+            # ignore the channels on the side, they are unrelaible if there are drifts,
+            # which can happen in 40x 
+            else:
+                for i in range(0, num_barcodes - 1):
+                    indices = np.where(np.logical_and(peaks > locations_barcode[i],
+                                                    peaks < locations_barcode[i+1]))[0]
+                    
+                    channels.extend(list(peaks[indices]))
+
+        # here you have a block detection failure
+        else:
+            sys.stdout.write("Block detection failure ... :(\n")
+            sys.stdout.flush()
+
+    # TODO: 100x block detection code later.    
+    elif magnificaiton == 100:
+        pass
+    
+    if len(channels) == 0:
+        return None
+    else:
+        return channels
 
 class tweezerWindow(QMainWindow):
 
