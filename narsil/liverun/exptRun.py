@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import math
+import pickle
 from pathlib import Path
 from functools import partial
 from torchvision import transforms, utils
@@ -73,7 +74,8 @@ class exptRun(object):
             'barcodeLength': 800,
             'smallObjectsArea': 64,
             'magnification': 40,
-            'channelsPerBlock': 21
+            'channelsPerBlock': 21,
+            'channelWidth': 36
         }
     
     #def createProcesses(self):
@@ -160,9 +162,9 @@ class exptRun(object):
                             VALUES (%s, %s, %s)""", (datetime.now(), int(data['Axes']['position']),
                             int(data['Axes']['time']),))
             elif tableName == 'segment':
-                cur.execute("""INSERT INTO segment (time, position, timepoint, numchannels)
-                            VALUES (%s, %s, %s, %s)""", (datetime.now(), int(data['position']),
-                            int(data['time']), data['numchannels'],))
+                cur.execute("""INSERT INTO segment (time, position, timepoint, locations, numchannels)
+                            VALUES (%s, %s, %s, %s, %s)""", (datetime.now(), int(data['position']),
+                            int(data['time']), data['locations'], data['numchannels'],))
 
         except pgdatabase.DatabaseError as e:
             sys.stderr.write(f"Error in writing to database: {e}")
@@ -229,7 +231,7 @@ class exptRun(object):
 
     # do all the writing to file system using this function,
     # abstract out the logic for different cases 
-    def writeFile(self, image, imageType, position, time, channelNo=None):
+    def writeFile(self, image, imageType, position, time, channelLocations=None, rowLocations=None):
         # construct directories if they are not there
         mainAnalysisDir = Path(self.imageProcessParameters["saveDir"])
         if imageType == 'cellSegmentation':
@@ -251,8 +253,33 @@ class exptRun(object):
                         plugin='tifffile')
             sys.stdout.write(str(channelMaskFilename) + " written \n")
             sys.stdout.flush()
-        elif imageType == 'oneChannelCells':
+        elif imageType == 'oneChannelCellSeg':
             pass
+        elif imageType == 'oneMMChannelPhase':
+            # check if there are locations
+            if channelLocations == None:
+                sys.stdout.write(f"Channel Locations missing for Pos:{position} and time:{time}\n")
+                sys.stdout.flush()
+            else:
+                # create directories if not existing and write the stack
+                filename = str(time) + '.tiff'
+                positionDir = str(position)
+                channelWidth = self.channelProcessParameters['channelWidth'] // 2
+                for (i, location) in enumerate(channelLocations, 0):
+                    channelNo = str(i)
+                    channelDir  = mainAnalysisDir / positionDir/ imageType / channelNo
+                    if not channelDir.exists():
+                        channelDir.mkdir(parents=True, exist_ok=True)
+
+                    channelImg = image[rowLocations[0]: rowLocations[1], 
+                                        location - channelWidth: location+ channelWidth]
+                    # write the image
+                    channelFileName = channelDir / filename
+                    io.imsave(channelFileName, channelImg, check_contrast=False, plugin='tifffile')
+
+                sys.stdout.write(f"{len(channelLocations)} from pos: {position} and time: {time} written\n")
+                sys.stdout.flush()
+            
         elif imageType == 'barcodes':
             # you get a list of images instead of one image
             positionDir = str(position)
@@ -324,15 +351,23 @@ class exptRun(object):
         channelLocations = identifyChannels(peaks, locations_barcode,
                              magnification=self.channelProcessParameters['magnification'],
                              channelsPerBlock=self.channelProcessParameters['channelsPerBlock']) 
+
         
         if channelLocations != None:
             sys.stdout.write(f"No of channels identified: {len(channelLocations)}\n")
             sys.stdout.flush()
+
+            # start the cutting channels and then writing it to appropriate directory
+            # just send image and locations and let the write function cut the things out
+            #
+            self.writeFile(phase_img, 'oneMMChannelPhase', position, time,
+                             channelLocations = channelLocations,
+                             rowLocations = (row_x1, row_x2))
         
         dataToDatabase = {
             'time': time,
             'position': position,
-            'locations': list(channelLocations),
+            'locations': pickle.dumps(channelLocations),
             'numchannels': len(channelLocations)
         }
 
