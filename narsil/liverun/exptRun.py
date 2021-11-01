@@ -61,6 +61,7 @@ class exptRun(object):
         # to fetch data using iterable dataloader. Dataloader
         self.segmentDataset = queueDataset(self.segmentQueue) 
 
+
         self.cellSegNet = None
         self.channelSegNet = None
 
@@ -77,7 +78,19 @@ class exptRun(object):
             'channelsPerBlock': 21,
             'channelWidth': 36
         }
-    
+
+        self.GPUParameters = {
+            'channelNetBatchSize': 1,
+            'deadAliveNetBatchSize': 20,
+        }
+
+        self.cellProcessParameters = {
+
+        }
+
+        self.deadAliveParameters = {
+
+        }
     #def createProcesses(self):
     #    # all the stuff needed to for processing functions
     #    # like the networks used etc
@@ -102,6 +115,7 @@ class exptRun(object):
         self.cellSegNet.load_state_dict(cellNetState['model_state_dict'])
         self.cellSegNet.eval()
 
+        # channel segmentation model
         channelSegModelPath = Path(self.imageProcessParameters["channelModelPath"])
         channelNetState = torch.load(channelSegModelPath, map_location=self.device)
             # use the net depending on what model is loaded
@@ -112,6 +126,9 @@ class exptRun(object):
 
         self.channelSegNet.load_state_dict(channelNetState['model_state_dict'])
         self.channelSegNet.eval()
+
+        # dead-alive net model
+
 
         sys.stdout.write(f"Networks loaded onto {self.device} successfully ...\n")
         sys.stdout.flush()
@@ -126,6 +143,9 @@ class exptRun(object):
         self.normalize = normalize() 
         self.tensorize = tensorizeOneImage()
         self.segTransforms = transforms.Compose([self.resize, self.normalize, self.tensorize])
+
+
+        # set operations on the dead-alive single mother-machine channel images
 
 
     def putImagesInSegQueue(self, image, metadata):
@@ -363,6 +383,36 @@ class exptRun(object):
             self.writeFile(phase_img, 'oneMMChannelPhase', position, time,
                              channelLocations = channelLocations,
                              rowLocations = (row_x1, row_x2))
+
+            # fetch all the lstm-hidden states for this position and time > 0
+            # for each channel you have an LSTM vector and you fetch it
+
+            #lstmPositionTime = np.zeros(shape=(1, 1))
+            #channelWidth = self.channelProcessParameters['channelWidth'] // 2
+
+            # once you got the channel locations, put the individual channels in
+            # the queue for dead-alive classification 
+            #
+            #for (i, location) in enumerate(channelLocations, 0):
+                # transform each of the image chop
+                # fetch the previous vectors from the database
+           #    if time == 0:
+          #         # put lstm vector = None
+         #          lstm_vector = None
+        #       else:
+       #            lstm_vector = lstmPositionTime[i]
+#
+#                # chop the image again,
+#                imageChop = phase_img[row_x1: row_x2, 
+#                                location - channelWidth: location + channelWidth]
+#
+#
+#                self.deadaliveQueue.put({
+#                    'image': imageChop,
+#                    'lstm_vector': lstm_vector,
+#                    'position': position,
+#                    'time': time,
+#                })
         
         dataToDatabase = {
             'time': time,
@@ -410,11 +460,38 @@ class exptRun(object):
         sys.stdout.write("Segmentation process completed successfully\n")
         sys.stdout.flush()
 
-    def findLocations(self, channelMask):
+    def processDeadAlive(self, data):
+
+        # pass the data through the net
+        # and then write the hidden state to the database
         pass
-    
+
+
     def deadalive(self):
-        pass
+        # dead-alive net loop for doing dead-alive analysis in single channel phase stacks
+        sys.stdout.write(f"Starting dead-alive analyzer ... \n")
+        sys.stdout.flush()
+
+        # wait for kill event
+        while not self.deadaliveKillEvent.is_set():
+            try:
+                time.sleep(2)
+
+                # write the dataloader to get the right stuff into the net
+                dataloader = DataLoader(self.deadAliveDataset, batch_size=20)
+                with torch.no_grad():
+                    for data in dataloader:
+                        data = data
+                        self.processDeadAlive(data,)
+                        
+            except KeyboardInterrupt:
+                self.deadaliveKillEvent.set()
+                sys.stdout.write("Dead alive process interrupted using keyboard\n")
+                sys.stdout.flush()
+
+        
+        sys.stdout.write("Dead Alive process completed successfully\n")
+        sys.stdout.flush()
 
     def growth(self):
         pass
@@ -446,6 +523,10 @@ def runProcesses(exptRunObject):
     exptRunObject.segmentKillEvent.clear()
     segmentProcess = tmp.Process(target=exptRunObject.segment, name='Segment Process')
     segmentProcess.start()
+
+    exptRunObject.deadaliveKillEvent.clear()
+    deadAliveProcess = tmp.Process(target=exptRunObject.deadalive, name='DeadAlive Process')
+    deadAliveProcess.start()
 
 # In the datasets image names are img_000000000.tiff format.
 def imgFilenameFromNumber(number):
