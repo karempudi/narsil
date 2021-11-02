@@ -202,7 +202,8 @@ class exptRun(object):
     # fake acquiring outside to test positions  
     def acquireFake(self):
 
-        testDataDir = Path("C:\\Users\\Praneeth\\Documents\\Elflab\\Code\\testdata\\hetero40x")
+        #testDataDir = Path("C:\\Users\\Praneeth\\Documents\\Elflab\\Code\\testdata\\hetero40x")
+        testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x/")
         for event in self.acquireEvents:
             print(f"{event['axes']['position']} -- {event['axes']['time']}")
             positionStr = "Pos10" + str(event['axes']['position'])
@@ -441,7 +442,8 @@ class exptRun(object):
                 dataloader = DataLoader(self.segmentDataset, batch_size=1)
                 with torch.no_grad():
                     for data in dataloader:
-                        image = data['image'].to(self.device)
+                        #image = data['image'].to(self.device)
+                        image = data['image']
                         if image == None:
                             time.sleep(2)
                         self.processChannels(image, int(data['position']), int(data['time']))
@@ -478,7 +480,7 @@ class exptRun(object):
                 time.sleep(2)
 
                 # write the dataloader to get the right stuff into the net
-                dataloader = DataLoader(self.deadAliveDataset, batch_size=20)
+                dataloader = DataLoader(self.deadAliveDataset, batch_size=20, num_workers=1)
                 with torch.no_grad():
                     for data in dataloader:
                         data = data
@@ -516,6 +518,10 @@ class exptRun(object):
     
 def runProcesses(exptRunObject):
     exptRunObject.loadNets()
+    try:
+        tmp.set_start_method('spawn')
+    except:
+        pass
     exptRunObject.acquireKillEvent.clear()
     acquireProcess = tmp.Process(target=exptRunObject.acquireFake, name='Acquire Process')
     acquireProcess.start()
@@ -524,9 +530,9 @@ def runProcesses(exptRunObject):
     segmentProcess = tmp.Process(target=exptRunObject.segment, name='Segment Process')
     segmentProcess.start()
 
-    exptRunObject.deadaliveKillEvent.clear()
-    deadAliveProcess = tmp.Process(target=exptRunObject.deadalive, name='DeadAlive Process')
-    deadAliveProcess.start()
+    #exptRunObject.deadaliveKillEvent.clear()
+    #deadAliveProcess = tmp.Process(target=exptRunObject.deadalive, name='DeadAlive Process')
+    #deadAliveProcess.start()
 
 # In the datasets image names are img_000000000.tiff format.
 def imgFilenameFromNumber(number):
