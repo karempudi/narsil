@@ -16,11 +16,12 @@ setup(
             'scikit-image',
             'scipy',
             'matplotlib',
-            'wxPython',
+            #'wxPython',
             'psycopg2',
             'PySide6',
             'pyqtgraph',
-            'notebook'
+            'notebook',
+            'pycromanager'
             ],
         packages=find_packages(exclude=("tests", "notebooks",))
         )
