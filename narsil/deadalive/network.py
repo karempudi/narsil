@@ -61,7 +61,7 @@ class deadAliveNetBase(nn.Module):
         super(deadAliveNetBase, self).__init__()
         self.device = device
         self.args = args
-        self.learning_rate = None
+        self.learning_rate =  None
         self.optimizer = None
         self.outputs = None
         self.loss_function = nn.BCELoss()
@@ -71,7 +71,7 @@ class deadAliveNetBase(nn.Module):
 
     def setup_optimizer(self, learning_rate):
         self.learning_rate = learning_rate
-        self.optimzier = optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=0.0005)
+        self.optimizer = optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=0.0005)
 
     def update_learning_rate(self, lr_new):
         if self.learning_rate != lr_new:
@@ -95,7 +95,7 @@ class deadAliveNet(deadAliveNetBase):
         self.device = device
         self.lstm_size = lstm_size
         self.conv = nn.ModuleList([
-            nn.Conv2d(1, 64, kerner_size=(11, 7), stride=(5, 3), padding=0),
+            nn.Conv2d(1, 64, kernel_size=(11, 7), stride=(5, 3), padding=0),
             nn.Conv2d(64, 128, 5, padding=2, groups=2),
             nn.Conv2d(128, 256, 3, padding=1),
             nn.Conv2d(256, 256, 3, padding=1, groups=2),
@@ -104,7 +104,7 @@ class deadAliveNet(deadAliveNetBase):
 
         self.lrn = nn.ModuleList([
             nn.LocalResponseNorm(size=5, alpha=0.0001, beta=0.75),
-            nn.LocalResponseNomr(size=5, alpha=0.0001, beta=0.75),
+            nn.LocalResponseNorm(size=5, alpha=0.0001, beta=0.75),
         ])
 
         self.conv_skip = nn.ModuleList([nn.Conv2d(64, 16, 1),
@@ -121,7 +121,7 @@ class deadAliveNet(deadAliveNetBase):
         ])
 
         # change based on what you see after concatenation
-        self.fc1 = nn.Linear(72992, 2048)
+        self.fc6 = nn.Linear(72992, 2048)
 
         self.lstm1 = CaffeLSTMCell(2048, self.lstm_size)
         self.lstm2 = CaffeLSTMCell(2048 + self.lstm_size, self.lstm_size)

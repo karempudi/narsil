@@ -23,6 +23,12 @@ class channelStackTrain(object):
                 imageStack = localimage
             else:
                 imageStack = np.dstack((imageStack, localimage))
+
+        # only one image is present, so you will have to  add the time dimension that is
+        # implicitly added in stacking images
+        if len(imageStack.shape) == 2:
+            imageStack = np.expand_dims(imageStack , -1)
+
         return {'imageSequence': np.expand_dims(imageStack, axis = 0),
                 'statesSequence': statesSequence.astype('float32')}
     
@@ -31,16 +37,19 @@ class channelStackTrain(object):
         return len(self.dataSequences)
 
     def construct_dataset(self):
+        #print("Called dataset contruction")
         for directory in self.phaseDirectoriesList:
             filenames = [int(filename.split('.')[0].split('/')[-1]) for filename in glob.glob(directory + "*" + self.fileformat)]
             filenames.sort()
-            sortedFilenames = [directory + str(filename) + self.fileformat for filenumber in filenames]
+            sortedFilenames = [directory + str(filenumber) + self.fileformat for filenumber in filenames]
             statesFilename = glob.glob(directory + "*.npy")[0]
             states = np.load(statesFilename)
+            #print(sortedFilenames)
+            #print(states)
             # loop over and construct sequneces
-            for i in range(0, len(sortedFilenames) - self.numUnrolls):
-                imgSequenceFilenames = sortedFilenames[i: i+ self.numUnrolls + 1]
-                sequencesStates = states[:, i:i+self.numUnrolls+1]
+            for i in range(0, len(sortedFilenames) - self.numUnrolls + 1):
+                imgSequenceFilenames = sortedFilenames[i: i+ self.numUnrolls]
+                sequenceStates = states[:, i:i+self.numUnrolls]
 
                 self.dataSequences.append((imgSequenceFilenames, sequenceStates))
 

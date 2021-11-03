@@ -1,8 +1,8 @@
 import torch
 import numpy as np
 from torch.utils.data import DataLoader
-from narsil.deadAlive.network import deadAliveNet
-from narsil.deadAlive.datasets import channelStackTrain
+from narsil.deadalive.network import deadAliveNet
+from narsil.deadalive.datasets import channelStackTrain
 
 class trainDeadAliveNet():
     def __init__(self, phaseDirectoriesList, modelParameters, optimizationParameters,
@@ -10,7 +10,7 @@ class trainDeadAliveNet():
 
         self.phaseDirectoriesList = phaseDirectoriesList
         self.modelParameters = modelParameters
-        self.optimzationParameters = optimizationParameters
+        self.optimizationParameters = optimizationParameters
         self.device = torch.device(self.modelParameters['device'] if torch.cuda.is_available() else "cpu")
         self.validation = validation
         self.validationDirsList = validataionDirsList
@@ -19,24 +19,25 @@ class trainDeadAliveNet():
 
     def initializeNet(self):
         self.net = deadAliveNet(device=self.device)
+        self.net.to(self.device)
+        self.net.setup_optimizer(self.optimizationParameters['learning_rate'])
 
     # TODO: insert validation loader into the loop. 
     def train(self):
-        numUnrolls = 1
-        nEpochs = self.optimzationParameters['nEpochs']
+        numUnrolls = 2
+        nEpochs = self.optimizationParameters['nEpochs']
+
         for epoch in range(nEpochs):
-            if epoch%10 == 0:
-                numUnrolls += 2
             stack = channelStackTrain(self.phaseDirectoriesList, numUnrolls, fileformat=self.fileformat)
             dataloader = DataLoader(stack, batch_size=1, shuffle=True, num_workers=6)
 
             epoch_loss = []
             print(f"Epoch {epoch} -- started")
-            lstm_state = None
 
             # get miniBatches and then in each minibatch loop over numUnrolls
             for i_batch, data in enumerate(dataloader, 0):
-                imageSequences, stateSequences = data['imageSequence'].to(self.device), data['stateSequence'].to(self.device)
+                lstm_state = None
+                imageSequences, stateSequences = data['imageSequence'].to(self.device), data['statesSequence'].to(self.device)
                 sequenceLosses = []
                 sequenceTargets = []
                 nTimeSteps = imageSequences.shape[-1]
@@ -46,12 +47,16 @@ class trainDeadAliveNet():
 
                     sequenceLosses.append(output)
                     sequenceTargets.append(stateSequences[:, :, timeStep])
+                    lstm_state = self.net.lstm_state
                 loss = self.net.loss(torch.stack(sequenceLosses), torch.stack(sequenceTargets))
                 loss.backward()
                 self.net.optimizer.step()
 
                 epoch_loss.append(loss.item())
-            lstm_state = self.net.lstm_state
+            #lstm_state = self.net.lstm_state
+            if epoch%10 == 0:
+                numUnrolls += 2
+
             print(f"Epoch average loss: {np.mean(epoch_loss)}")
 
 
