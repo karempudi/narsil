@@ -19,6 +19,7 @@ class channelStackTrain(object):
 
         for filename in imgSequenceFilenames:
             localimage = io.imread(filename).astype('float32')
+            localimage = (localimage - np.mean(localimage))/np.std(localimage)
             if imageStack is None:
                 imageStack = localimage
             else:

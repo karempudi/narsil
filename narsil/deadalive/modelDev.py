@@ -29,7 +29,7 @@ class trainDeadAliveNet():
 
         for epoch in range(nEpochs):
             stack = channelStackTrain(self.phaseDirectoriesList, numUnrolls, fileformat=self.fileformat)
-            dataloader = DataLoader(stack, batch_size=1, shuffle=True, num_workers=6)
+            dataloader = DataLoader(stack, batch_size=16, shuffle=True, num_workers=6)
 
             epoch_loss = []
             print(f"Epoch {epoch} -- started")
@@ -54,11 +54,11 @@ class trainDeadAliveNet():
 
                 epoch_loss.append(loss.item())
             #lstm_state = self.net.lstm_state
-            if epoch%10 == 0:
+            if epoch%20== 0:
                 numUnrolls += 2
 
             print(f"Epoch average loss: {np.mean(epoch_loss)}")
-
+            # run the validation loop
 
     def plotData(self, idx):
         pass

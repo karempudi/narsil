@@ -296,7 +296,7 @@ class exptRun(object):
                                         location - channelWidth: location+ channelWidth]
                     # write the image
                     channelFileName = channelDir / filename
-                    io.imsave(channelFileName, channelImg, check_contrast=False, plugin='tifffile')
+                    io.imsave(channelFileName, channelImg, check_contrast=False, compress = 6, plugin='tifffile')
 
                 sys.stdout.write(f"{len(channelLocations)} from pos: {position} and time: {time} written\n")
                 sys.stdout.flush()
@@ -310,7 +310,7 @@ class exptRun(object):
             for i, oneBarcode in enumerate(image, 0):
                 filename = str(time) + "_" + str(i) + '.jpg' 
                 oneBarcodeFilename = barcodesDir / filename
-                io.imsave(oneBarcodeFilename, oneBarcode, check_contrast=False,
+                io.imsave(oneBarcodeFilename, oneBarcode, check_contrast=False, compress=6,
                         plugin='tifffile')
             sys.stdout.write(f"{len(image)} barcodes written to disk \n")
             sys.stdout.flush()
