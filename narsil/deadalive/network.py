@@ -205,7 +205,7 @@ class deadAliveNet(deadAliveNetBase):
 class deadAliveNet80036(deadAliveNetBase):
     
     def __init__(self, device, lstm_size=1024, args=None):
-        super(deadAliveNet, self).__init__(device, args)
+        super(deadAliveNet80036, self).__init__(device, args)
         
         self.device = device
         self.lstm_size = lstm_size
@@ -247,57 +247,57 @@ class deadAliveNet80036(deadAliveNetBase):
         
         
         conv1 = self.conv[0](input)
-        print(f"Conv1 shape: {conv1.shape}")
+        #print(f"Conv1 shape: {conv1.shape}")
         pool1 = F.relu(F.max_pool2d(conv1, (2, 2)))
-        print(f"Pool1 shape: {pool1.shape}")
+        #print(f"Pool1 shape: {pool1.shape}")
         lrn1 = self.lrn[0](pool1)
-        print(f"Lrn1 shape: {lrn1.shape}")
+        #print(f"Lrn1 shape: {lrn1.shape}")
         
         # get the pool features into a vector for the final lstm at this spatial 
         # scale
         
         conv1_skip = self.prelu_skip[0](self.conv_skip[0](lrn1))
-        print(f"Conv1_skip shape: {conv1_skip.shape}")
+        #print(f"Conv1_skip shape: {conv1_skip.shape}")
         # flatten to pool later
         conv1_skip_flatten = conv1_skip.view(batch_size, -1)
-        print(f"Conv1_skip_flatten shape: {conv1_skip_flatten.shape}")
+        #print(f"Conv1_skip_flatten shape: {conv1_skip_flatten.shape}")
         
         
         conv2 = self.conv[1](lrn1)
-        print(f"Conv2 shape: {conv2.shape}")
+        #print(f"Conv2 shape: {conv2.shape}")
         pool2 = F.relu(F.max_pool2d(conv2, (2, 2)))
-        print(f"Pool2 shape: {pool2.shape}")
+        #print(f"Pool2 shape: {pool2.shape}")
         lrn2 = self.lrn[1](pool2)
-        print(f"Lrn2 shape: {lrn2.shape}")
+        #print(f"Lrn2 shape: {lrn2.shape}")
         
         
         conv2_skip = self.prelu_skip[1](self.conv_skip[1](lrn2))
-        print(f"Conv2_skip shape: {conv2_skip.shape}")
+        #print(f"Conv2_skip shape: {conv2_skip.shape}")
         # flatten to pool later
         conv2_skip_flatten = conv2_skip.view(batch_size, -1)
-        print(f"Conv2_skip_flatten shape: {conv2_skip_flatten.shape}")
+        #print(f"Conv2_skip_flatten shape: {conv2_skip_flatten.shape}")
         
         conv3 = F.relu(self.conv[2](lrn2))
-        print(f"Conv3 shape: {conv3.shape}")
+        #print(f"Conv3 shape: {conv3.shape}")
         conv4 = F.relu(self.conv[3](conv3))
-        print(f"Conv4 shape: {conv4.shape}")
+        #print(f"Conv4 shape: {conv4.shape}")
         
         conv4_skip = self.prelu_skip[2](self.conv_skip[2](conv4))
-        print(f"Conv4_skip shape: {conv4_skip.shape}")
+        #print(f"Conv4_skip shape: {conv4_skip.shape}")
         conv4_skip_flatten = conv4_skip.view(batch_size, -1)
-        print(f"Conv4_skip_flatten shape: {conv4_skip_flatten.shape}")
+        #print(f"Conv4_skip_flatten shape: {conv4_skip_flatten.shape}")
         
         pool4 = F.relu(F.max_pool2d(conv4, (2, 2)))
-        print(f"Pool4 shape: {pool4.shape}")
+        #print(f"Pool4 shape: {pool4.shape}")
         
         pool4_flat = pool4.view(batch_size, -1)
-        print(f"Pool4_flat shape: {pool4_flat.shape}")
+        #print(f"Pool4_flat shape: {pool4_flat.shape}")
         
         skip_concat = torch.cat([conv1_skip_flatten, conv2_skip_flatten, conv4_skip_flatten, pool4_flat], 1)
-        print(f"Skip concat shape: {skip_concat.shape}")
+        #print(f"Skip concat shape: {skip_concat.shape}")
         
         fc6 = F.relu(self.fc6(skip_concat))
-        print(f"FC6 shape: {fc6.shape}")
+        #print(f"FC6 shape: {fc6.shape}")
         
         
         if lstm_state is None:
@@ -312,6 +312,6 @@ class deadAliveNet80036(deadAliveNetBase):
         
         fc_out = self.fc_out(outputs2)
         
-        print(f"FC_out shape: {fc_out.shape}")
+        #print(f"FC_out shape: {fc_out.shape}")
         return torch.sigmoid(fc_out)
         

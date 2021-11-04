@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from torch.utils.data import DataLoader
-from narsil.deadalive.network import deadAliveNet
+from narsil.deadalive.network import deadAliveNet, deadAliveNet80036
 from narsil.deadalive.datasets import channelStackTrain
 
 class trainDeadAliveNet():
@@ -18,7 +18,7 @@ class trainDeadAliveNet():
         self.initializeNet()
 
     def initializeNet(self):
-        self.net = deadAliveNet(device=self.device)
+        self.net = deadAliveNet80036(device=self.device)
         self.net.to(self.device)
         self.net.setup_optimizer(self.optimizationParameters['learning_rate'])
 
@@ -54,7 +54,7 @@ class trainDeadAliveNet():
 
                 epoch_loss.append(loss.item())
             #lstm_state = self.net.lstm_state
-            if epoch%20== 0:
+            if epoch%10== 0:
                 numUnrolls += 2
 
             print(f"Epoch average loss: {np.mean(epoch_loss)}")
