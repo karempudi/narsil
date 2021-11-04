@@ -66,7 +66,7 @@ class trainDeadAliveNet():
     def save(self, path):
         savedModel = {
             'modelParameters': self.modelParameters,
-            'optimizationParamters': self.optimzationParameters,
+            'optimizationParamters': self.optimizationParameters,
             'model_state_dict': self.net.state_dict()
         }
         torch.save(savedModel, path)
