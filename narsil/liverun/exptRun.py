@@ -1,5 +1,4 @@
-import multiprocessing as mp
-import torch.multiprocessing as tmp
+import torch.multiprocessing as mp
 import psycopg2 as pgdatabase
 import torch
 import argparse
@@ -24,6 +23,10 @@ from scipy.signal import find_peaks
 from skimage.morphology import remove_small_objects
 import numpy as np
 
+try:
+    mp.set_start_method('spawn')
+except:
+        pass
 """
 ExptProcess class that creates runs all the processes and
 manages shared objects between processes and status of each process
@@ -31,6 +34,7 @@ manages shared objects between processes and status of each process
 class exptRun(object):
 
     def __init__(self):
+
 
         # Image acquisition events that you get from GUI
         self.acquireEvents = None
@@ -44,18 +48,18 @@ class exptRun(object):
         self.dbParameters = None
 
         # queues and kill events
-        self.segmentQueue = tmp.Queue()
-        self.deadaliveQueue = tmp.Queue()
+        self.segmentQueue = mp.Queue()
+        self.deadaliveQueue = mp.Queue()
 
         #self.acquireProcess = None
         #self.segmentProcess = None
         #self.deadAliveProcess = None
 
-        self.acquireKillEvent = tmp.Event()
-        self.segmentKillEvent = tmp.Event()
-        self.deadaliveKilEvent = tmp.Event()
+        self.acquireKillEvent = mp.Event()
+        self.segmentKillEvent = mp.Event()
+        self.deadaliveKilEvent = mp.Event()
 
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
         # datasets: These are wrappers around torch multiprocessing queues, that are used
         # to fetch data using iterable dataloader. Dataloader
@@ -87,7 +91,8 @@ class exptRun(object):
         }
 
         self.cellProcessParameters = {
-
+            'segThreshold': 0.85,
+            'smallObjectsArea': 64
         }
 
         self.deadAliveParameters = {
@@ -115,6 +120,7 @@ class exptRun(object):
             self.cellSegNet = smallerUnet(cellNetState['modelParameters']['transposeConv'])
         
         self.cellSegNet.load_state_dict(cellNetState['model_state_dict'])
+        self.cellSegNet.to(self.device)
         self.cellSegNet.eval()
 
         # channel segmentation model
@@ -127,6 +133,7 @@ class exptRun(object):
             self.channelSegNet = smallerUnet(channelNetState['modelParameters']['transposeConv'])
 
         self.channelSegNet.load_state_dict(channelNetState['model_state_dict'])
+        self.channelSegNet.to(self.device)
         self.channelSegNet.eval()
 
         # dead-alive net model
@@ -223,7 +230,7 @@ class exptRun(object):
             print(imagePath)
             print("--------")
 
-            time.sleep(3)
+            time.sleep(0.3)
 
         while not self.acquireKillEvent.is_set():
             try:
@@ -258,10 +265,21 @@ class exptRun(object):
         # construct directories if they are not there
         mainAnalysisDir = Path(self.imageProcessParameters["saveDir"])
         if imageType == 'cellSegmentation':
+
+            filename = str(time) + '.tiff'
+            positionDir = str(position)
+            cellMaskDir = mainAnalysisDir / positionDir / imageType
+            if not cellMaskDir.exists():
+                cellMaskDir.mkdir(parents=True, exist_ok=True)
+
+            cellMaskFilename = cellMaskDir / filename
+
+            image  = image * 255
+            io.imsave(cellMaskFilename, image.astype('uint8'), compress=6, check_contrast=False,
+                        plugin='tifffile')
+            sys.stdout.write(str(cellMaskFilename) + " written \n")
+            sys.stdout.flush()
             
-            #io.imsave(cellMaskFilename, image.astype('uint8'), compress=6, check_contrast=False,
-            #        plugin='tifffile')
-            pass
         elif imageType == 'channelSegmentation':
             # construct filename
             filename = str(time) + '.tiff'
@@ -321,7 +339,21 @@ class exptRun(object):
     # assume it is one image per batch
     # TODO: batching of images done later
     def processChannels(self, image, position, time):
+        
+        # pass throught the cell net to get 
+        sys.stdout.write(f"Image is on GPU: {image.is_cuda} -- \n")
+        sys.stdout.flush()
+        cellSegMask = torch.sigmoid(self.channelSegNet(image)) > self.cellProcessParameters['segThreshold']
 
+        # send to cpu to be saved cut according to position
+        cellSegMaskCpu = cellSegMask.cpu().detach().numpy().squeeze(0).squeeze(0)
+
+        # remove smaller objects
+        cellSegMaskCpu = remove_small_objects(cellSegMaskCpu.astype('bool'), min_size=self.cellProcessParameters['smallObjectsArea'])
+
+        self.writeFile(cellSegMaskCpu, 'cellSegmentation', position, time)
+
+ 
         # pass through net and get the results
         channelSegMask = torch.sigmoid(self.channelSegNet(image)) > self.channelProcessParameters['segThreshold']
 
@@ -400,9 +432,21 @@ class exptRun(object):
         sys.stdout.write("\n ---------\n")
         sys.stdout.flush()
 
+        return channelLocations
 
-    def processCells(self, image, position, time):
-        pass
+
+    def processCells(self, image, position, time, channelLocations):
+        
+        # pass throught the cell net to get 
+        cellSegMask = torch.sigmoid(self.cellSegNet(image)) > self.cellProcessParameters['segThreshold']
+
+        # send to cpu to be saved cut according to position
+        cellSegMaskCpu = cellSegMask.cpu().detach().numpy().squeeze(0).squeeze(0)
+
+        # remove smaller objects
+        cellSegMaskCpu = remove_small_objects(cellSegMaskCpu.astype('bool'), min_size=self.cellProcessParameters['smallObjectsArea'])
+
+        self.writeFile(cellSegMaskCpu, 'cellSegmentation', position, time)
     
     
     def segment(self):
@@ -416,10 +460,13 @@ class exptRun(object):
                 with torch.no_grad():
                     for data in dataloader:
                         #image = data['image'].to(self.device)
-                        image = data['image']
-                        if image == None:
+                        image = data['image'].to(self.device)
+                        if data == None:
                             time.sleep(2)
-                        self.processChannels(image, int(data['position']), int(data['time']))
+                            continue
+                        channelLocations = self.processChannels(image, int(data['position']), int(data['time']))
+                        del image
+
 
                         #sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
                         #sys.stdout.flush()
@@ -482,9 +529,8 @@ class exptRun(object):
         self.segmentProcess.start()
     
     def stop(self):
-        self.segmentKillEvent.set()
         self.acquireKillEvent.set()
-
+        self.segmentKillEvent.set()
     # if it fails write the state and bail, and use this state to restart after adjusting 
     def savedState(self):
         pass
@@ -492,15 +538,15 @@ class exptRun(object):
 def runProcesses(exptRunObject):
     exptRunObject.loadNets()
     try:
-        tmp.set_start_method('spawn')
+        mp.set_start_method('spawn')
     except:
         pass
     exptRunObject.acquireKillEvent.clear()
-    acquireProcess = tmp.Process(target=exptRunObject.acquireFake, name='Acquire Process')
+    acquireProcess = mp.Process(target=exptRunObject.acquireFake, name='Acquire Process')
     acquireProcess.start()
 
     exptRunObject.segmentKillEvent.clear()
-    segmentProcess = tmp.Process(target=exptRunObject.segment, name='Segment Process')
+    segmentProcess = mp.Process(target=exptRunObject.segment, name='Segment Process')
     segmentProcess.start()
 
     #exptRunObject.deadaliveKillEvent.clear()
