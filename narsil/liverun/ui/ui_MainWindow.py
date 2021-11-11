@@ -3,23 +3,30 @@
 ################################################################################
 ## Form generated from reading UI file 'mainWindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.1.2
+## Created by: Qt User Interface Compiler version 6.2.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import *  # type: ignore
-from PySide6.QtGui import *  # type: ignore
-from PySide6.QtWidgets import *  # type: ignore
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
+    QCursor, QFont, QFontDatabase, QGradient,
+    QIcon, QImage, QKeySequence, QLinearGradient,
+    QPainter, QPalette, QPixmap, QRadialGradient,
+    QTransform)
+from PySide6.QtWidgets import (QApplication, QGroupBox, QHBoxLayout, QLabel,
+    QLineEdit, QMainWindow, QMenu, QMenuBar,
+    QPushButton, QSizePolicy, QStatusBar, QWidget)
 
 from pyqtgraph import PlotWidget
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(904, 858)
+        MainWindow.resize(947, 902)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.Setup = QGroupBox(self.centralwidget)
@@ -34,24 +41,24 @@ class Ui_MainWindow(object):
         self.viewerBox = QGroupBox(self.centralwidget)
         self.viewerBox.setObjectName(u"viewerBox")
         self.viewerBox.setGeometry(QRect(20, 460, 621, 301))
-        self.label_5 = QLabel(self.viewerBox)
-        self.label_5.setObjectName(u"label_5")
-        self.label_5.setGeometry(QRect(10, 20, 47, 13))
+        self.viewerPositionLabel = QLabel(self.viewerBox)
+        self.viewerPositionLabel.setObjectName(u"viewerPositionLabel")
+        self.viewerPositionLabel.setGeometry(QRect(10, 30, 47, 13))
         font = QFont()
         font.setPointSize(10)
-        self.label_5.setFont(font)
-        self.lineEdit = QLineEdit(self.viewerBox)
-        self.lineEdit.setObjectName(u"lineEdit")
-        self.lineEdit.setGeometry(QRect(70, 20, 113, 20))
-        self.label_6 = QLabel(self.viewerBox)
-        self.label_6.setObjectName(u"label_6")
-        self.label_6.setGeometry(QRect(200, 20, 71, 16))
-        self.lineEdit_2 = QLineEdit(self.viewerBox)
-        self.lineEdit_2.setObjectName(u"lineEdit_2")
-        self.lineEdit_2.setGeometry(QRect(270, 20, 113, 20))
-        self.pushButton = QPushButton(self.viewerBox)
-        self.pushButton.setObjectName(u"pushButton")
-        self.pushButton.setGeometry(QRect(410, 20, 75, 23))
+        self.viewerPositionLabel.setFont(font)
+        self.viewerPositionNo = QLineEdit(self.viewerBox)
+        self.viewerPositionNo.setObjectName(u"viewerPositionNo")
+        self.viewerPositionNo.setGeometry(QRect(70, 30, 113, 20))
+        self.viewerChannelLabel = QLabel(self.viewerBox)
+        self.viewerChannelLabel.setObjectName(u"viewerChannelLabel")
+        self.viewerChannelLabel.setGeometry(QRect(190, 30, 91, 16))
+        self.viewerChannelNo = QLineEdit(self.viewerBox)
+        self.viewerChannelNo.setObjectName(u"viewerChannelNo")
+        self.viewerChannelNo.setGeometry(QRect(280, 30, 113, 20))
+        self.viewerGetButton = QPushButton(self.viewerBox)
+        self.viewerGetButton.setObjectName(u"viewerGetButton")
+        self.viewerGetButton.setGeometry(QRect(410, 30, 75, 23))
         self.runStatus = QGroupBox(self.centralwidget)
         self.runStatus.setObjectName(u"runStatus")
         self.runStatus.setGeometry(QRect(20, 180, 861, 271))
@@ -117,7 +124,7 @@ class Ui_MainWindow(object):
         self.deleteTablesButton.setGeometry(QRect(400, 70, 121, 27))
         self.horizontalLayoutWidget = QWidget(self.groupBox_3)
         self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
-        self.horizontalLayoutWidget.setGeometry(QRect(10, 110, 220, 31))
+        self.horizontalLayoutWidget.setGeometry(QRect(10, 110, 250, 31))
         self.moveLayout = QHBoxLayout(self.horizontalLayoutWidget)
         self.moveLayout.setObjectName(u"moveLayout")
         self.moveLayout.setContentsMargins(0, 0, 0, 0)
@@ -138,7 +145,7 @@ class Ui_MainWindow(object):
 
         self.liveButton = QPushButton(self.groupBox_3)
         self.liveButton.setObjectName(u"liveButton")
-        self.liveButton.setGeometry(QRect(250, 110, 121, 27))
+        self.liveButton.setGeometry(QRect(270, 110, 121, 27))
         self.statisticsBox = QGroupBox(self.centralwidget)
         self.statisticsBox.setObjectName(u"statisticsBox")
         self.statisticsBox.setGeometry(QRect(650, 460, 231, 301))
@@ -154,7 +161,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 904, 21))
+        self.menubar.setGeometry(QRect(0, 0, 947, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuExit = QMenu(self.menubar)
@@ -178,9 +185,9 @@ class Ui_MainWindow(object):
         self.setupButton.setText(QCoreApplication.translate("MainWindow", u"Setup", None))
         self.viewExptSetupButton.setText(QCoreApplication.translate("MainWindow", u"View ", None))
         self.viewerBox.setTitle(QCoreApplication.translate("MainWindow", u"Viewer", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Position:", None))
-        self.label_6.setText(QCoreApplication.translate("MainWindow", u"Channel No:", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Get", None))
+        self.viewerPositionLabel.setText(QCoreApplication.translate("MainWindow", u"Position:", None))
+        self.viewerChannelLabel.setText(QCoreApplication.translate("MainWindow", u"Channel No:", None))
+        self.viewerGetButton.setText(QCoreApplication.translate("MainWindow", u"Get", None))
         self.runStatus.setTitle(QCoreApplication.translate("MainWindow", u"Experiment Status", None))
         self.acquiredLabel.setText(QCoreApplication.translate("MainWindow", u"Images Acquired", None))
         self.segmentedLabel.setText(QCoreApplication.translate("MainWindow", u"Images Segmented", None))

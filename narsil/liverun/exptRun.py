@@ -65,6 +65,7 @@ class exptRun(object):
         self.cellSegNet = None
         self.channelSegNet = None
 
+
         self.channelProcessParameters = {
             'segThreshold': 0.9,
             'minPeaksDistance': 25,
@@ -80,6 +81,7 @@ class exptRun(object):
         }
 
         self.GPUParameters = {
+            'cellNetBatchSize': 1,
             'channelNetBatchSize': 1,
             'deadAliveNetBatchSize': 20,
         }
@@ -385,36 +387,7 @@ class exptRun(object):
                              channelLocations = channelLocations,
                              rowLocations = (row_x1, row_x2))
 
-            # fetch all the lstm-hidden states for this position and time > 0
-            # for each channel you have an LSTM vector and you fetch it
 
-            #lstmPositionTime = np.zeros(shape=(1, 1))
-            #channelWidth = self.channelProcessParameters['channelWidth'] // 2
-
-            # once you got the channel locations, put the individual channels in
-            # the queue for dead-alive classification 
-            #
-            #for (i, location) in enumerate(channelLocations, 0):
-                # transform each of the image chop
-                # fetch the previous vectors from the database
-           #    if time == 0:
-          #         # put lstm vector = None
-         #          lstm_vector = None
-        #       else:
-       #            lstm_vector = lstmPositionTime[i]
-#
-#                # chop the image again,
-#                imageChop = phase_img[row_x1: row_x2, 
-#                                location - channelWidth: location + channelWidth]
-#
-#
-#                self.deadaliveQueue.put({
-#                    'image': imageChop,
-#                    'lstm_vector': lstm_vector,
-#                    'position': position,
-#                    'time': time,
-#                })
-        
         dataToDatabase = {
             'time': time,
             'position': position,
