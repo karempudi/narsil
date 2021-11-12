@@ -277,7 +277,6 @@ class exptDatabase(object):
         finally:
             if con:
                 con.close()
-        
         return data 
 
 # If you ever want to use this in QProcess 

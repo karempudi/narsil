@@ -26,6 +26,7 @@ from narsil.liverun.ui.ui_MainWindow import Ui_MainWindow
 from narsil.liverun.ui.ui_EventsWindow import Ui_EventsWindow
 from narsil.liverun.ui.ui_SetupWindow import Ui_SetupWindow
 from narsil.liverun.ui.ui_ViewerWindow import Ui_ViewerWindow
+from narsil.liverun.ui.ui_LiveWindow import Ui_LiveWindow
 from narsil.liverun.exptDatabase import exptDatabase
 from narsil.liverun.exptRun import exptRun, runProcesses
 
@@ -59,6 +60,10 @@ class MainWindow(QMainWindow):
         # viewer window to browse through different positions and checkout which 
         # positions to move to 
         self.viewerWindow = ViewerWindow()
+
+
+        # initialize live window
+        self.liveWindow = LiveWindow()
 
 
         # Create a database class object to be able to interact 
@@ -217,7 +222,7 @@ class MainWindow(QMainWindow):
         pass
     
     def showLive(self):
-        pass
+        self.liveWindow.show()
     
     def showTweezablePositions(self):
         pass
@@ -336,6 +341,20 @@ class ImageFetchThread(QThread):
 
     def getData(self):
         return self.data
+
+class LiveWindow(QMainWindow):
+
+    def __init__(self):
+        super(LiveWindow, self).__init__()
+        self.ui = Ui_LiveWindow()
+        self.ui.setupUi(self)
+        self.setWindowTitle("Live window")
+
+        self.setupButtonHandlers()
+
+    def setupButtonHandlers(self):
+        pass
+
     
 
 class ExptSetupWindow(QMainWindow):
