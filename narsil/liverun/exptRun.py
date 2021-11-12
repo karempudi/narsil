@@ -213,10 +213,11 @@ class exptRun(object):
         #self.loadNets()
         #testDataDir = Path("C:\\Users\\Praneeth\\Documents\\Elflab\\Code\\testdata\\hetero40x")
         #testDataDir = Path("D:\\Jimmy\\EXP-21-BY1006\\therun")
-        testDataDir = Path("/home/pk/Documents/EXP-21-BY1006/")
+        #testDataDir = Path("/home/pk/Documents/EXP-21-BY1006/")
+        testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x")
         for event in self.acquireEvents:
             print(f"{event['axes']['position']} -- {event['axes']['time']}")
-            positionStr = "Pos1" + str(event['axes']['position'] + 1)
+            positionStr = "Pos10" + str(event['axes']['position'])
             imgName = imgFilenameFromNumber(int(event['axes']['time']))
             channelName = str(event['channel']['config'])
             imagePath = testDataDir / positionStr / channelName/ imgName
@@ -275,7 +276,7 @@ class exptRun(object):
 
             cellMaskFilename = cellMaskDir / filename
 
-            sys.stdout.write(f"{cellMaskFilename}")
+            sys.stdout.write(f"{cellMaskFilename} written \n")
             sys.stdout.flush()
 
             image  = image * 255
