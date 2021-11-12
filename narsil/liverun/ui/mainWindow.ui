@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>947</width>
-    <height>902</height>
+    <width>914</width>
+    <height>849</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -50,83 +50,6 @@
      </property>
      <property name="text">
       <string>View </string>
-     </property>
-    </widget>
-   </widget>
-   <widget class="QGroupBox" name="viewerBox">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>460</y>
-      <width>621</width>
-      <height>301</height>
-     </rect>
-    </property>
-    <property name="title">
-     <string>Viewer</string>
-    </property>
-    <widget class="QLabel" name="viewerPositionLabel">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>30</y>
-       <width>47</width>
-       <height>13</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>10</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>Position:</string>
-     </property>
-    </widget>
-    <widget class="QLineEdit" name="viewerPositionNo">
-     <property name="geometry">
-      <rect>
-       <x>70</x>
-       <y>30</y>
-       <width>113</width>
-       <height>20</height>
-      </rect>
-     </property>
-    </widget>
-    <widget class="QLabel" name="viewerChannelLabel">
-     <property name="geometry">
-      <rect>
-       <x>190</x>
-       <y>30</y>
-       <width>91</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Channel No:</string>
-     </property>
-    </widget>
-    <widget class="QLineEdit" name="viewerChannelNo">
-     <property name="geometry">
-      <rect>
-       <x>280</x>
-       <y>30</y>
-       <width>113</width>
-       <height>20</height>
-      </rect>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="viewerGetButton">
-     <property name="geometry">
-      <rect>
-       <x>410</x>
-       <y>30</y>
-       <width>75</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Get</string>
      </property>
     </widget>
    </widget>
@@ -428,9 +351,9 @@
    <widget class="QGroupBox" name="statisticsBox">
     <property name="geometry">
      <rect>
-      <x>650</x>
+      <x>30</x>
       <y>460</y>
-      <width>231</width>
+      <width>851</width>
       <height>301</height>
      </rect>
     </property>
@@ -483,7 +406,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>947</width>
+     <width>914</width>
      <height>22</height>
     </rect>
    </property>

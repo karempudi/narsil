@@ -71,7 +71,7 @@ class exptRun(object):
 
 
         self.channelProcessParameters = {
-            'segThreshold': 0.9,
+            'segThreshold': 0.8,
             'minPeaksDistance': 25,
             'barcodeWidth': 48,
             'minChannelLength':100,
@@ -212,8 +212,8 @@ class exptRun(object):
     def acquireFake(self):
         #self.loadNets()
         #testDataDir = Path("C:\\Users\\Praneeth\\Documents\\Elflab\\Code\\testdata\\hetero40x")
-        testDataDir = Path("D:\\Jimmy\\EXP-21-BY1006\\therun")
-        #testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x/")
+        #testDataDir = Path("D:\\Jimmy\\EXP-21-BY1006\\therun")
+        testDataDir = Path("/home/pk/Documents/EXP-21-BY1006/")
         for event in self.acquireEvents:
             print(f"{event['axes']['position']} -- {event['axes']['time']}")
             positionStr = "Pos1" + str(event['axes']['position'] + 1)
@@ -474,7 +474,6 @@ class exptRun(object):
                             continue
                         channelLocations = self.processChannels(image, int(data['position']), int(data['time']))
                         del image
-
 
                         #sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
                         #sys.stdout.flush()
