@@ -59,7 +59,7 @@ class exptRun(object):
         self.segmentKillEvent = mp.Event()
         self.deadaliveKilEvent = mp.Event()
 
-        self.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # datasets: These are wrappers around torch multiprocessing queues, that are used
         # to fetch data using iterable dataloader. Dataloader
@@ -210,12 +210,13 @@ class exptRun(object):
 
     # fake acquiring outside to test positions  
     def acquireFake(self):
-
+        #self.loadNets()
         #testDataDir = Path("C:\\Users\\Praneeth\\Documents\\Elflab\\Code\\testdata\\hetero40x")
-        testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x/")
+        testDataDir = Path("D:\\Jimmy\\EXP-21-BY1006\\therun")
+        #testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x/")
         for event in self.acquireEvents:
             print(f"{event['axes']['position']} -- {event['axes']['time']}")
-            positionStr = "Pos10" + str(event['axes']['position'])
+            positionStr = "Pos1" + str(event['axes']['position'] + 1)
             imgName = imgFilenameFromNumber(int(event['axes']['time']))
             channelName = str(event['channel']['config'])
             imagePath = testDataDir / positionStr / channelName/ imgName
@@ -273,6 +274,9 @@ class exptRun(object):
                 cellMaskDir.mkdir(parents=True, exist_ok=True)
 
             cellMaskFilename = cellMaskDir / filename
+
+            sys.stdout.write(f"{cellMaskFilename}")
+            sys.stdout.flush()
 
             image  = image * 255
             io.imsave(cellMaskFilename, image.astype('uint8'), compress=6, check_contrast=False,
@@ -343,7 +347,7 @@ class exptRun(object):
         # pass throught the cell net to get 
         sys.stdout.write(f"Image is on GPU: {image.is_cuda} -- \n")
         sys.stdout.flush()
-        cellSegMask = torch.sigmoid(self.channelSegNet(image)) > self.cellProcessParameters['segThreshold']
+        cellSegMask = torch.sigmoid(self.cellSegNet(image)) > self.cellProcessParameters['segThreshold']
 
         # send to cpu to be saved cut according to position
         cellSegMaskCpu = cellSegMask.cpu().detach().numpy().squeeze(0).squeeze(0)
@@ -418,13 +422,16 @@ class exptRun(object):
             self.writeFile(phase_img, 'oneMMChannelPhase', position, time,
                              channelLocations = channelLocations,
                              rowLocations = (row_x1, row_x2))
-
+        
+            numChannels = len(channelLocations)
+        else:
+            numChannels = 0
 
         dataToDatabase = {
             'time': time,
             'position': position,
             'locations': pickle.dumps(channelLocations),
-            'numchannels': len(channelLocations)
+            'numchannels': numChannels
         }
 
         self.recordInDatabase('segment', dataToDatabase)
@@ -453,6 +460,7 @@ class exptRun(object):
         # segmentation loop for both cell and channels
         sys.stdout.write(f"Starting segmentation ... \n")
         sys.stdout.flush()
+        self.loadNets()
 
         while not self.segmentKillEvent.is_set():
             try:
@@ -536,7 +544,7 @@ class exptRun(object):
         pass
     
 def runProcesses(exptRunObject):
-    exptRunObject.loadNets()
+    #exptRunObject.loadNets()
     try:
         mp.set_start_method('spawn')
     except:
@@ -627,7 +635,7 @@ def identifyChannels(peaks, locations_barcode, magnification=40, channelsPerBloc
             sys.stdout.flush()
 
     # TODO: 100x block detection code later.    
-    elif magnificaiton == 100:
+    elif magnification == 100:
         pass
     
     if len(channels) == 0:
