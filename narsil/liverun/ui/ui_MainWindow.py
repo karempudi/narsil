@@ -129,7 +129,7 @@ class Ui_MainWindow(object):
         self.liveButton.setGeometry(QRect(270, 110, 121, 27))
         self.statisticsBox = QGroupBox(self.centralwidget)
         self.statisticsBox.setObjectName(u"statisticsBox")
-        self.statisticsBox.setGeometry(QRect(30, 460, 851, 301))
+        self.statisticsBox.setGeometry(QRect(660, 460, 221, 301))
         self.deadAliveStatsButton = QPushButton(self.statisticsBox)
         self.deadAliveStatsButton.setObjectName(u"deadAliveStatsButton")
         self.deadAliveStatsButton.setGeometry(QRect(50, 30, 88, 27))

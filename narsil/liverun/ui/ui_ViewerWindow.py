@@ -55,6 +55,7 @@ class Ui_ViewerWindow(object):
         self.graphicsView = ImageView(self.centralwidget)
         self.graphicsView.setObjectName(u"graphicsView")
         self.graphicsView.setGeometry(QRect(40, 80, 551, 591))
+        self.graphicsView.setInteractive(True)
         self.filterParametersBox = QGroupBox(self.centralwidget)
         self.filterParametersBox.setObjectName(u"filterParametersBox")
         self.filterParametersBox.setGeometry(QRect(600, 80, 341, 401))
@@ -67,6 +68,9 @@ class Ui_ViewerWindow(object):
         self.fetchButton = QPushButton(self.centralwidget)
         self.fetchButton.setObjectName(u"fetchButton")
         self.fetchButton.setGeometry(QRect(490, 20, 89, 25))
+        self.pushButton_2 = QPushButton(self.centralwidget)
+        self.pushButton_2.setObjectName(u"pushButton_2")
+        self.pushButton_2.setGeometry(QRect(980, 630, 191, 25))
         ViewerWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(ViewerWindow)
         self.menubar.setObjectName(u"menubar")
@@ -92,5 +96,6 @@ class Ui_ViewerWindow(object):
         self.filterParametersBox.setTitle(QCoreApplication.translate("ViewerWindow", u"Filter Parameters", None))
         self.pushButton.setText(QCoreApplication.translate("ViewerWindow", u"Next Auto", None))
         self.fetchButton.setText(QCoreApplication.translate("ViewerWindow", u"Fetch", None))
+        self.pushButton_2.setText(QCoreApplication.translate("ViewerWindow", u"Send Tweeze Positions", None))
     # retranslateUi
 

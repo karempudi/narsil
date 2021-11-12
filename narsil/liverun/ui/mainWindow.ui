@@ -351,9 +351,9 @@
    <widget class="QGroupBox" name="statisticsBox">
     <property name="geometry">
      <rect>
-      <x>30</x>
+      <x>660</x>
       <y>460</y>
-      <width>851</width>
+      <width>221</width>
       <height>301</height>
      </rect>
     </property>
