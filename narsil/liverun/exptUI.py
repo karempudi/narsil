@@ -451,7 +451,7 @@ class LiveWindow(QMainWindow):
 
         # check if button are checked and intialize the nets
         with torch.no_grad():
-            if self.segChannels:
+            if self.segCells:
                 # load the cells net
                 cellSegModelPath = Path(self.parameters['cellSegNetModelPath'])
                 cellNetState = torch.load(cellSegModelPath, map_location = self.device)
@@ -465,10 +465,10 @@ class LiveWindow(QMainWindow):
                 self.cellSegNet.to(self.device)
                 self.cellSegNet.eval()
 
-            if self.segCells:
+            if self.segChannels:
                 # load the channels net
                 # channel segmentation model
-                channelSegModelPath = Path(self.parameters["channelModelPath"])
+                channelSegModelPath = Path(self.parameters["channelSegNetModelPath"])
                 channelNetState = torch.load(channelSegModelPath, map_location=self.device)
                     # use the net depending on what model is loaded
                 if channelNetState['modelParameters']['netType'] == 'big':
@@ -492,9 +492,21 @@ class LiveWindow(QMainWindow):
             imageFilename =  Path("/home/pk/Documents/realtimeData/hetero40x/Pos103/phaseFast/img_000000000.tiff")
             image = io.imread(imageFilename)
             image = self.pad(image)
-            self.ui.liveImageGraphics.setImage(image.T, autoLevels=True, autoRange=False)
             sys.stdout.write(f"Image from {imageFilename} : {image.shape} grabbed. \n")
             sys.stdout.flush()
+            imgTensor = torch.from_numpy(image.astype('float32')).unsqueeze(0).unsqueeze(0).to(self.device)
+            
+            if self.segChannels:
+                with torch.no_grad():
+                    imgTensor = (imgTensor - torch.mean(imgTensor))/torch.std(imgTensor)
+                    out = torch.sigmoid(self.channelSegNet(imgTensor))
+                    out_cpu = out.detach().cpu().numpy().squeeze(0).squeeze(0)
+                    sys.stdout.write(f"Output shape: {out_cpu.shape}\n")
+                    sys.stdout.flush()
+                
+                self.ui.liveImageGraphics.setImage(out_cpu.T, autoLevels=True, autoRange=False)
+            else:
+                self.ui.liveImageGraphics.setImage(image.T, autoLevels=True, autoRange=False)
 
         except Exception as e:
             sys.stdout.write(f"Fake grabbing failed\n")
@@ -538,10 +550,16 @@ class LiveWindow(QMainWindow):
     def updateImage(self):
         sys.stdout.write("Image acquired\n")
         sys.stdout.flush()
+        imgTensor = torch.from_numpy(self.imgAcquireThread.data.astype('float32')).unsqueeze(0).unsqueeze(0)
+        if self.segChannels:
+            with torch.no_grad():
+                out = torch.sigmoid(self.channelSegNet(imgTensor)) > 0.9
+                out_cpu = out.detach().numpy().squeeze(0).squeeze(0)
+                sys.stdout.write(f"Output shape: {out_cpu.shape}")
+                sys.stdout.flush()
         self.ui.liveImageGraphics.setImage(self.imgAcquireThread.data.T, autoLevels=True, autoRange=False)
         sys.stdout.write(f"Image plotted : {self.imgAcquireThread.data.shape}\n")
         sys.stdout.flush()
-
 
 
 class ExptSetupWindow(QMainWindow):
