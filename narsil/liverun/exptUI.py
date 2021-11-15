@@ -20,9 +20,10 @@ from pycromanager import Bridge
 from threading import Event
 
 # utils and other imports from narsil
-from narsil.liverun.utils import parsePositionsFile, getPositionList
+from narsil.liverun.utils import parsePositionsFile, getPositionList, padTo32
 from narsil.liverun.utils import getPositionsMicroManager, getMicroManagerPresets
 
+from narsil.segmentation.network import basicUnet, smallerUnet
 
 # ui python classes import
 from narsil.liverun.ui.ui_MainWindow import Ui_MainWindow
@@ -225,6 +226,7 @@ class MainWindow(QMainWindow):
         pass
     
     def showLive(self):
+        self.liveWindow.setParameters(self.analysisSetupSettings)
         self.liveWindow.show()
     
     def showTweezablePositions(self):
@@ -380,11 +382,13 @@ class LiveImageFetch(QThread):
 class LiveWindow(QMainWindow):
 
 
-    def __init__(self):
+    def __init__(self, parameters=None):
         super(LiveWindow, self).__init__()
         self.ui = Ui_LiveWindow()
         self.ui.setupUi(self)
         self.setWindowTitle("Live window")
+
+        self.parameters = parameters
 
         self.acquiring = False
         self.imgAcquireThread = None
@@ -407,6 +411,12 @@ class LiveWindow(QMainWindow):
         self.segCells = False
         self.cellSegNet = None
         self.device = torch.device("cpu")
+        self.pad = padTo32()
+        self.timer = QTimer()
+        self.timer.setInterval(1000)
+
+    def setParameters(self, parameters):
+        self.parameters = parameters
         
     def setupButtonHandlers(self):
 
@@ -427,28 +437,52 @@ class LiveWindow(QMainWindow):
     def setCellSegNet(self, buttonState):
         if buttonState == True:
             self.segCells = False
-            sys.stdout.write("Loading cell seg net\n")
+            sys.stdout.write(f"Loading cell seg net: {self.parameters['cellSegNetModelPath']}\n")
             sys.stdout.flush()
- 
+
     def setChannelSegNet(self, buttonState):
         if buttonState == True:
             self.segChannels = True
-            sys.stdout.write("Loading channel seg net\n")
+            sys.stdout.write(f"Loading channel seg net: {self.parameters['channelSegNetModelPath']}\n")
             sys.stdout.flush()
 
     def acquireLive(self):
         # grab an image every 200 ms and pipe it throught the 
 
         # check if button are checked and intialize the nets
-        if self.segChannels:
-            # load the cells net
-            pass
-        if self.segCells:
-            # load the channels net
-            pass
+        with torch.no_grad():
+            if self.segChannels:
+                # load the cells net
+                cellSegModelPath = Path(self.parameters['cellSegNetModelPath'])
+                cellNetState = torch.load(cellSegModelPath, map_location = self.device)
+                # use the net depending on what model is loaded
+                if cellNetState['modelParameters']['netType'] == 'big':
+                    self.cellSegNet = basicUnet(cellNetState['modelParameters']['transposeConv'])
+                elif cellNetState['modelParameters']['netType'] == 'small':
+                    self.cellSegNet = smallerUnet(cellNetState['modelParameters']['transposeConv'])
+                
+                self.cellSegNet.load_state_dict(cellNetState['model_state_dict'])
+                self.cellSegNet.to(self.device)
+                self.cellSegNet.eval()
 
-        self.timer = QTimer()
-        self.timer.setInterval(1000)
+            if self.segCells:
+                # load the channels net
+                # channel segmentation model
+                channelSegModelPath = Path(self.parameters["channelModelPath"])
+                channelNetState = torch.load(channelSegModelPath, map_location=self.device)
+                    # use the net depending on what model is loaded
+                if channelNetState['modelParameters']['netType'] == 'big':
+                    self.channelSegNet = basicUnet(channelNetState['modelParameters']['transposeConv'])
+                elif channelNetState['modelParameters']['netType'] == 'small':
+                    self.channelSegNet = smallerUnet(channelNetState['modelParameters']['transposeConv'])
+
+                self.channelSegNet.load_state_dict(channelNetState['model_state_dict'])
+                self.channelSegNet.to(self.device)
+                self.channelSegNet.eval()
+
+        sys.stdout.write(f"Nets loaded on device\n")
+        sys.stdout.flush()
+
         self.timer.timeout.connect(self.grabImageFake)
         self.timer.start()
 
@@ -457,12 +491,14 @@ class LiveWindow(QMainWindow):
         try:
             imageFilename =  Path("/home/pk/Documents/realtimeData/hetero40x/Pos103/phaseFast/img_000000000.tiff")
             image = io.imread(imageFilename)
+            image = self.pad(image)
             self.ui.liveImageGraphics.setImage(image.T, autoLevels=True, autoRange=False)
-            sys.stdout.write(f"Image from {imageFilename} grabbed. \n")
+            sys.stdout.write(f"Image from {imageFilename} : {image.shape} grabbed. \n")
             sys.stdout.flush()
 
         except Exception as e:
             sys.stdout.write(f"Fake grabbing failed\n")
+            sys.stdout.write(f"{e}\n")
             sys.stdout.flush()
             image = np.random.normal(loc=0.0, scale=1.0, size=(100, 100))
             self.ui.liveImageGraphics.setImage(image, autoLevels=True, autoRange=False)
@@ -493,14 +529,17 @@ class LiveWindow(QMainWindow):
         sys.stdout.flush()
         self.timer.stop()
         # delete the nets to cleanup memory.
+        del self.cellSegNet
+        del self.channelSegNet
         self.cellSegNet = None
         self.channelSegNet = None
+        torch.cuda.empty_cache()
     
     def updateImage(self):
         sys.stdout.write("Image acquired\n")
         sys.stdout.flush()
         self.ui.liveImageGraphics.setImage(self.imgAcquireThread.data.T, autoLevels=True, autoRange=False)
-        sys.stdout.write("Image plotted\n")
+        sys.stdout.write(f"Image plotted : {self.imgAcquireThread.data.shape}\n")
         sys.stdout.flush()
 
 

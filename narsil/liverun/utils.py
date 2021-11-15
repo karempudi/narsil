@@ -29,6 +29,27 @@ class resizeOneImage(object):
 		
 		return image
 
+
+# return pure numpy images that are padded
+class padTo32(object):
+
+	def __call__(self, image):
+		height, width = image.shape
+		if height%32 != 0:
+			newHeight = height - height%32 + 32
+		else:
+			newHeight = height
+
+		if width%32 != 0:
+			newWidth = width - width%32 + 32
+		else:
+			newWidth = width
+
+		image = np.pad(image, pad_width=((0, newHeight - height), (0, newWidth - width)),
+			mode='constant', constant_values = 0.0)
+
+		return image
+
 class tensorizeOneImage(object):
 
 	def __init__(self, numUnSqueezes=1):
