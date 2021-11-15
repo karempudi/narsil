@@ -55,7 +55,6 @@ class Ui_ViewerWindow(object):
         self.graphicsView = ImageView(self.centralwidget)
         self.graphicsView.setObjectName(u"graphicsView")
         self.graphicsView.setGeometry(QRect(40, 80, 551, 591))
-        self.graphicsView.setInteractive(True)
         self.filterParametersBox = QGroupBox(self.centralwidget)
         self.filterParametersBox.setObjectName(u"filterParametersBox")
         self.filterParametersBox.setGeometry(QRect(600, 80, 341, 401))

@@ -15,6 +15,7 @@ import pyqtgraph as pg
 import psycopg2 as pgdatabase
 from datetime import datetime
 from skimage import io
+from pycromanager import Bridge
 
 # utils and other imports from narsil
 from narsil.liverun.utils import parsePositionsFile, getPositionList
@@ -342,6 +343,37 @@ class ImageFetchThread(QThread):
     def getData(self):
         return self.data
 
+
+class LiveImageFetch(QThread):
+
+    dataFetched = Signal()
+    
+    def __init__(self, core):
+        super(LiveImageFetch, self).__init__()
+        self.data = None
+        self.core = core
+
+    def run(self):
+        # snap an image and set the data
+        try:
+            exposure = self.core.get_exposure()
+            auto_shutter = self.core.get_property('Core', 'AutoShutter')
+            self.core.set_property('Core', 'AutoShutter', 0)
+
+            self.core.snap_image()
+            tagged_image = self.core.get_tagged_image()
+
+            self.data = np.reshape(tagged_image.pix, newshape=[tagged_image.tags['Height'], tagged_image.tags['Width']])
+        except Exception as e:
+            sys.stdout.write(f"Live image grabbing failed\n")
+            sys.stdout.flush()
+            self.data = None
+
+        self.dataFetched.emit()
+
+    def getData(self):
+        return self.data
+
 class LiveWindow(QMainWindow):
 
     def __init__(self):
@@ -350,12 +382,42 @@ class LiveWindow(QMainWindow):
         self.ui.setupUi(self)
         self.setWindowTitle("Live window")
 
+        self.acquiring = False
+        self.imgAcquireThread = None
+        with Bridge() as bridge:
+            self.core = bridge.get_core()
         self.setupButtonHandlers()
 
     def setupButtonHandlers(self):
-        pass
 
-    
+        self.ui.startImagingButton.clicked.connect(self.acquireLive)
+
+        self.ui.stopImagingButton.clicked.connect(self.stopAcquiring)
+
+
+    def acquireLive(self, clicked):
+        # grab an image every 200 ms and pipe it throught the 
+        self.acquiring = True
+        while self.acquiring:
+            # launch a thread and fetch image and plot it
+            self.imgAcquiredThread = LiveImageFetch(self.core)
+            self.imgAcquiredThread.start()
+            self.imgAcquiredThread.dataFetched.connect(self.updateImage)
+            time.sleep(1.0)
+
+    def stopAcquiring(self, clicked):
+        self.acquiring = False
+
+    def updateImage(self):
+        sys.stdout.write("Image received\n")
+        sys.stdout.flush()
+        self.ui.liveImageGraphics.ui.histogram.hide()
+        self.ui.liveImageGraphics.ui.roiBtn.hide()
+        self.ui.liveImageGraphics.ui.menuBtn.hide()
+        self.ui.liveImageGraphics.setImage(self.imageAcquired.data, autoLevels=True)
+        sys.stdout.write("Image plotted\n")
+        sys.stdout.flush()
+
 
 class ExptSetupWindow(QMainWindow):
 

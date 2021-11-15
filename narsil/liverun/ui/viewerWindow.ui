@@ -121,9 +121,6 @@
       <height>591</height>
      </rect>
     </property>
-    <property name="interactive">
-     <bool>true</bool>
-    </property>
    </widget>
    <widget class="QGroupBox" name="filterParametersBox">
     <property name="geometry">

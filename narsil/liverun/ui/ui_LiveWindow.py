@@ -15,9 +15,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QGroupBox, QHBoxLayout, QLabel,
-    QLineEdit, QMainWindow, QMenuBar, QPushButton,
-    QScrollBar, QSizePolicy, QStatusBar, QWidget)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QGroupBox, QHBoxLayout,
+    QLabel, QLineEdit, QMainWindow, QMenuBar,
+    QPushButton, QScrollBar, QSizePolicy, QStatusBar,
+    QWidget)
 
 from pyqtgraph import ImageView
 
@@ -25,7 +26,7 @@ class Ui_LiveWindow(object):
     def setupUi(self, LiveWindow):
         if not LiveWindow.objectName():
             LiveWindow.setObjectName(u"LiveWindow")
-        LiveWindow.resize(955, 616)
+        LiveWindow.resize(1131, 616)
         self.centralwidget = QWidget(LiveWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.highlightBox = QGroupBox(self.centralwidget)
@@ -71,27 +72,33 @@ class Ui_LiveWindow(object):
         self.horizontalLayout_2 = QHBoxLayout(self.horizontalLayoutWidget_2)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
-        self.startImaging = QPushButton(self.horizontalLayoutWidget_2)
-        self.startImaging.setObjectName(u"startImaging")
+        self.startImagingButton = QPushButton(self.horizontalLayoutWidget_2)
+        self.startImagingButton.setObjectName(u"startImagingButton")
 
-        self.horizontalLayout_2.addWidget(self.startImaging)
+        self.horizontalLayout_2.addWidget(self.startImagingButton)
 
-        self.stopImaging = QPushButton(self.horizontalLayoutWidget_2)
-        self.stopImaging.setObjectName(u"stopImaging")
+        self.stopImagingButton = QPushButton(self.horizontalLayoutWidget_2)
+        self.stopImagingButton.setObjectName(u"stopImagingButton")
 
-        self.horizontalLayout_2.addWidget(self.stopImaging)
+        self.horizontalLayout_2.addWidget(self.stopImagingButton)
 
         self.liveImageGraphics = ImageView(self.centralwidget)
         self.liveImageGraphics.setObjectName(u"liveImageGraphics")
         self.liveImageGraphics.setGeometry(QRect(10, 120, 921, 331))
         self.horizontalScrollBar = QScrollBar(self.centralwidget)
         self.horizontalScrollBar.setObjectName(u"horizontalScrollBar")
-        self.horizontalScrollBar.setGeometry(QRect(360, 460, 160, 16))
+        self.horizontalScrollBar.setGeometry(QRect(350, 460, 160, 16))
         self.horizontalScrollBar.setOrientation(Qt.Horizontal)
+        self.cellSegCheckBox = QCheckBox(self.centralwidget)
+        self.cellSegCheckBox.setObjectName(u"cellSegCheckBox")
+        self.cellSegCheckBox.setGeometry(QRect(20, 80, 92, 23))
+        self.channelSegCheckBox = QCheckBox(self.centralwidget)
+        self.channelSegCheckBox.setObjectName(u"channelSegCheckBox")
+        self.channelSegCheckBox.setGeometry(QRect(110, 80, 92, 23))
         LiveWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(LiveWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 955, 22))
+        self.menubar.setGeometry(QRect(0, 0, 1131, 22))
         LiveWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(LiveWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -109,7 +116,9 @@ class Ui_LiveWindow(object):
         self.BlockNoLabel.setText(QCoreApplication.translate("LiveWindow", u"Block No", None))
         self.pushButton_2.setText(QCoreApplication.translate("LiveWindow", u"Highlight", None))
         self.controlsBox.setTitle(QCoreApplication.translate("LiveWindow", u"Controls", None))
-        self.startImaging.setText(QCoreApplication.translate("LiveWindow", u"Start", None))
-        self.stopImaging.setText(QCoreApplication.translate("LiveWindow", u"Stop", None))
+        self.startImagingButton.setText(QCoreApplication.translate("LiveWindow", u"Start", None))
+        self.stopImagingButton.setText(QCoreApplication.translate("LiveWindow", u"Stop", None))
+        self.cellSegCheckBox.setText(QCoreApplication.translate("LiveWindow", u"Cells", None))
+        self.channelSegCheckBox.setText(QCoreApplication.translate("LiveWindow", u"Channels", None))
     # retranslateUi
 

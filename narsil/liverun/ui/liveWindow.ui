@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>955</width>
+    <width>1131</width>
     <height>616</height>
    </rect>
   </property>
@@ -89,14 +89,14 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QPushButton" name="startImaging">
+       <widget class="QPushButton" name="startImagingButton">
         <property name="text">
          <string>Start</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="stopImaging">
+       <widget class="QPushButton" name="stopImagingButton">
         <property name="text">
          <string>Stop</string>
         </property>
@@ -118,7 +118,7 @@
    <widget class="QScrollBar" name="horizontalScrollBar">
     <property name="geometry">
      <rect>
-      <x>360</x>
+      <x>350</x>
       <y>460</y>
       <width>160</width>
       <height>16</height>
@@ -128,13 +128,39 @@
      <enum>Qt::Horizontal</enum>
     </property>
    </widget>
+   <widget class="QCheckBox" name="cellSegCheckBox">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>80</y>
+      <width>92</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Cells</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="channelSegCheckBox">
+    <property name="geometry">
+     <rect>
+      <x>110</x>
+      <y>80</y>
+      <width>92</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Channels</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>955</width>
+     <width>1131</width>
      <height>22</height>
     </rect>
    </property>
