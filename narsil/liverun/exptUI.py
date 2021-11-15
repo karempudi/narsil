@@ -357,8 +357,8 @@ class LiveImageFetch(QThread):
         # snap an image and set the data
         try:
             exposure = self.core.get_exposure()
-            auto_shutter = self.core.get_property('Core', 'AutoShutter')
-            self.core.set_property('Core', 'AutoShutter', 0)
+            #auto_shutter = self.core.get_property('Core', 'AutoShutter')
+            #self.core.set_property('Core', 'AutoShutter', 0)
 
             self.core.snap_image()
             tagged_image = self.core.get_tagged_image()
@@ -376,6 +376,7 @@ class LiveImageFetch(QThread):
 
 class LiveWindow(QMainWindow):
 
+
     def __init__(self):
         super(LiveWindow, self).__init__()
         self.ui = Ui_LiveWindow()
@@ -384,10 +385,14 @@ class LiveWindow(QMainWindow):
 
         self.acquiring = False
         self.imgAcquireThread = None
-        with Bridge() as bridge:
-            self.core = bridge.get_core()
+        try:
+            self.bridge = Bridge()
+            self.core = self.bridge.get_core()
             self.height = self.core.get_image_height()
             self.width = self.core.get_image_width()
+        except:
+            sys.stdout.write(f"Micromanager couldn't be connected\n")
+            sys.stdout.flush()
         self.setupButtonHandlers()
 
     def setupButtonHandlers(self):
@@ -399,37 +404,31 @@ class LiveWindow(QMainWindow):
 
     def acquireLive(self, clicked):
         # grab an image every 200 ms and pipe it throught the 
-        self.acquiring = True
-        while self.acquiring:
-            try:
-                exposure = self.core.get_exposure()
-                auto_shutter = self.core.get_property('Core', 'AutoShutter')
-                self.core.set_property('Core', 'AutoShutter', 0)
+        try:
+            self.imgAcquireThread = LiveImageFetch(self.core)
+            self.imgAcquireThread.dataFetched.connect(self.updateImage)
+            self.imgAcquireThread.start()
 
-                self.core.snap_image()
-                tagged_image = self.core.get_tagged_image()
-
-                self.data = np.reshape(tagged_image.pix, newshape=[tagged_image.tags['Height'], tagged_image.tags['Width']])
-
-            except Exception as e:
-                sys.stdout.write(f"Live image grabbing failed\n")
-                sys.stdout.flush()
-                self.data = np.
-            
-            if self.data is not None:
-                sys.stdout.write("Image acquired\n")
-                sys.stdout.flush()
-                self.ui.liveImageGraphics.ui.histogram.hide()
-                self.ui.liveImageGraphics.ui.roiBtn.hide()
-                self.ui.liveImageGraphics.ui.menuBtn.hide()
-                self.ui.liveImageGraphics.setImage(self.imageAcquired.data, autoLevels=True)
-                sys.stdout.write("Image plotted\n")
-                sys.stdout.flush()
+        except Exception as e:
+            sys.stdout.write(f"Live image grabbing failed\n")
+            sys.stdout.flush()
+            self.data = np.random.randint(low=0, high=2, size=(self.width, self.height))
 
             time.sleep(0.5)
 
     def stopAcquiring(self, clicked):
         self.acquiring = False
+    
+    def updateImage(self):
+        sys.stdout.write("Image acquired\n")
+        sys.stdout.flush()
+        self.ui.liveImageGraphics.ui.histogram.hide()
+        self.ui.liveImageGraphics.ui.roiBtn.hide()
+        self.ui.liveImageGraphics.ui.menuBtn.hide()
+        self.ui.liveImageGraphics.setImage(self.imgAcquireThread.data.T, autoLevels=True)
+        sys.stdout.write("Image plotted\n")
+        sys.stdout.flush()
+
 
 
 class ExptSetupWindow(QMainWindow):
