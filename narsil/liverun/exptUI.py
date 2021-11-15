@@ -16,6 +16,7 @@ import psycopg2 as pgdatabase
 from datetime import datetime
 from skimage import io
 from pycromanager import Bridge
+from threading import Event
 
 # utils and other imports from narsil
 from narsil.liverun.utils import parsePositionsFile, getPositionList
@@ -383,6 +384,8 @@ class LiveWindow(QMainWindow):
         self.ui.setupUi(self)
         self.setWindowTitle("Live window")
 
+        self.killAcquire = Event()
+
         self.acquiring = False
         self.imgAcquireThread = None
         try:
@@ -404,20 +407,24 @@ class LiveWindow(QMainWindow):
 
     def acquireLive(self, clicked):
         # grab an image every 200 ms and pipe it throught the 
-        try:
-            self.imgAcquireThread = LiveImageFetch(self.core)
-            self.imgAcquireThread.dataFetched.connect(self.updateImage)
-            self.imgAcquireThread.start()
+        self.killAcquire.clear()
 
-        except Exception as e:
-            sys.stdout.write(f"Live image grabbing failed\n")
-            sys.stdout.flush()
-            self.data = np.random.randint(low=0, high=2, size=(self.width, self.height))
+        while not self.killAcquire.is_set():
+            try:
+                self.imgAcquireThread = LiveImageFetch(self.core)
+                self.imgAcquireThread.dataFetched.connect(self.updateImage)
+                self.imgAcquireThread.start()
+
+            except Exception as e:
+                sys.stdout.write(f"Live image grabbing failed\n")
+                sys.stdout.flush()
+                self.data = np.random.randint(low=0, high=2, size=(self.width, self.height))
 
             time.sleep(0.5)
 
     def stopAcquiring(self, clicked):
         self.acquiring = False
+        self.killAcquire.set()
     
     def updateImage(self):
         sys.stdout.write("Image acquired\n")
