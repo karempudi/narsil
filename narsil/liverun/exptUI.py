@@ -4,6 +4,7 @@ import os
 import sys
 import numpy as np
 import time
+import torch
 from pathlib import Path
 from collections import OrderedDict
 
@@ -397,6 +398,15 @@ class LiveWindow(QMainWindow):
             sys.stdout.flush()
         self.setupButtonHandlers()
 
+        self.ui.liveImageGraphics.ui.histogram.hide()
+        self.ui.liveImageGraphics.ui.roiBtn.hide()
+        self.ui.liveImageGraphics.ui.menuBtn.hide()
+
+        self.segChannels = False
+        self.channelSegNet = None
+        self.segCells = False
+        self.cellSegNet = None
+        self.device = torch.device("cpu")
         
     def setupButtonHandlers(self):
 
@@ -404,14 +414,62 @@ class LiveWindow(QMainWindow):
 
         self.ui.stopImagingButton.clicked.connect(self.stopAcquiring)
 
+        self.ui.cellSegCheckBox.toggled.connect(self.setCellSegNet)
+        self.ui.channelSegCheckBox.toggled.connect(self.setChannelSegNet)
+        self.ui.gpuCheckBox.toggled.connect(self.setGPUDevice)
+
+    def setGPUDevice(self, buttonState):
+        if buttonState == True:
+            self.device = torch.device("cuda:0" if torch.cuda.is_available else "cpu")
+            sys.stdout.write("Selected GPU option\n")
+            sys.stdout.flush()
+
+    def setCellSegNet(self, buttonState):
+        if buttonState == True:
+            self.segCells = False
+            sys.stdout.write("Loading cell seg net\n")
+            sys.stdout.flush()
+ 
+    def setChannelSegNet(self, buttonState):
+        if buttonState == True:
+            self.segChannels = True
+            sys.stdout.write("Loading channel seg net\n")
+            sys.stdout.flush()
 
     def acquireLive(self):
         # grab an image every 200 ms and pipe it throught the 
+
+        # check if button are checked and intialize the nets
+        if self.segChannels:
+            # load the cells net
+            pass
+        if self.segCells:
+            # load the channels net
+            pass
+
         self.timer = QTimer()
         self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.grabImage)
+        self.timer.timeout.connect(self.grabImageFake)
         self.timer.start()
 
+    def grabImageFake(self):
+
+        try:
+            imageFilename =  Path("/home/pk/Documents/realtimeData/hetero40x/Pos103/phaseFast/img_000000000.tiff")
+            image = io.imread(imageFilename)
+            self.ui.liveImageGraphics.setImage(image.T, autoLevels=True, autoRange=False)
+            sys.stdout.write(f"Image from {imageFilename} grabbed. \n")
+            sys.stdout.flush()
+
+        except Exception as e:
+            sys.stdout.write(f"Fake grabbing failed\n")
+            sys.stdout.flush()
+            image = np.random.normal(loc=0.0, scale=1.0, size=(100, 100))
+            self.ui.liveImageGraphics.setImage(image, autoLevels=True, autoRange=False)
+         
+        self.acquiring = True
+        sys.stdout.write(f"Image aqcuiring : {self.acquiring}\n")
+        sys.stdout.flush()
 
     def grabImage(self):
         try:
@@ -425,7 +483,7 @@ class LiveWindow(QMainWindow):
             self.data = np.random.randint(low=0, high=2, size=(self.width, self.height))
         
         self.acquiring = True
-        sys.stdout.write(f"Image aqcuiring : {self.acquiring}")
+        sys.stdout.write(f"Image aqcuiring : {self.acquiring}\n")
         sys.stdout.flush()
     
 
@@ -434,13 +492,13 @@ class LiveWindow(QMainWindow):
         sys.stdout.write(f"Image aqcuiring : {self.acquiring}\n")
         sys.stdout.flush()
         self.timer.stop()
+        # delete the nets to cleanup memory.
+        self.cellSegNet = None
+        self.channelSegNet = None
     
     def updateImage(self):
         sys.stdout.write("Image acquired\n")
         sys.stdout.flush()
-        self.ui.liveImageGraphics.ui.histogram.hide()
-        self.ui.liveImageGraphics.ui.roiBtn.hide()
-        self.ui.liveImageGraphics.ui.menuBtn.hide()
         self.ui.liveImageGraphics.setImage(self.imgAcquireThread.data.T, autoLevels=True, autoRange=False)
         sys.stdout.write("Image plotted\n")
         sys.stdout.flush()

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1131</width>
-    <height>616</height>
+    <height>763</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -115,10 +115,10 @@
      </rect>
     </property>
    </widget>
-   <widget class="QScrollBar" name="horizontalScrollBar">
+   <widget class="QScrollBar" name="scrollBar">
     <property name="geometry">
      <rect>
-      <x>350</x>
+      <x>380</x>
       <y>460</y>
       <width>160</width>
       <height>16</height>
@@ -152,6 +152,19 @@
     </property>
     <property name="text">
      <string>Channels</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="gpuCheckBox">
+    <property name="geometry">
+     <rect>
+      <x>220</x>
+      <y>80</y>
+      <width>92</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>GPU</string>
     </property>
    </widget>
   </widget>

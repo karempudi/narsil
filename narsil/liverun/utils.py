@@ -200,3 +200,6 @@ def getMicroManagerPresets():
     return ["phase", "alexa488", "cy5", "cy3", "texasred"]
     
 
+
+def identifyChannels(image):
+	pass
