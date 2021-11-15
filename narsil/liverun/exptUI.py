@@ -356,6 +356,7 @@ class LiveImageFetch(QThread):
 
     def run(self):
         # snap an image and set the data
+
         try:
             exposure = self.core.get_exposure()
             #auto_shutter = self.core.get_property('Core', 'AutoShutter')
@@ -384,8 +385,6 @@ class LiveWindow(QMainWindow):
         self.ui.setupUi(self)
         self.setWindowTitle("Live window")
 
-        self.killAcquire = Event()
-
         self.acquiring = False
         self.imgAcquireThread = None
         try:
@@ -398,6 +397,7 @@ class LiveWindow(QMainWindow):
             sys.stdout.flush()
         self.setupButtonHandlers()
 
+        
     def setupButtonHandlers(self):
 
         self.ui.startImagingButton.clicked.connect(self.acquireLive)
@@ -405,26 +405,35 @@ class LiveWindow(QMainWindow):
         self.ui.stopImagingButton.clicked.connect(self.stopAcquiring)
 
 
-    def acquireLive(self, clicked):
+    def acquireLive(self):
         # grab an image every 200 ms and pipe it throught the 
-        self.killAcquire.clear()
+        self.timer = QTimer()
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.grabImage)
+        self.timer.start()
 
-        while not self.killAcquire.is_set():
-            try:
-                self.imgAcquireThread = LiveImageFetch(self.core)
-                self.imgAcquireThread.dataFetched.connect(self.updateImage)
-                self.imgAcquireThread.start()
 
-            except Exception as e:
-                sys.stdout.write(f"Live image grabbing failed\n")
-                sys.stdout.flush()
-                self.data = np.random.randint(low=0, high=2, size=(self.width, self.height))
+    def grabImage(self):
+        try:
+            self.imgAcquireThread = LiveImageFetch(self.core)
+            self.imgAcquireThread.dataFetched.connect(self.updateImage)
+            self.imgAcquireThread.start()
 
-            time.sleep(0.5)
+        except Exception as e:
+            sys.stdout.write(f"Live image grabbing failed\n")
+            sys.stdout.flush()
+            self.data = np.random.randint(low=0, high=2, size=(self.width, self.height))
+        
+        self.acquiring = True
+        sys.stdout.write(f"Image aqcuiring : {self.acquiring}")
+        sys.stdout.flush()
+    
 
     def stopAcquiring(self, clicked):
         self.acquiring = False
-        self.killAcquire.set()
+        sys.stdout.write(f"Image aqcuiring : {self.acquiring}")
+        sys.stdout.flush()
+        self.timer.stop()
     
     def updateImage(self):
         sys.stdout.write("Image acquired\n")
