@@ -431,7 +431,7 @@ class LiveWindow(QMainWindow):
 
     def stopAcquiring(self, clicked):
         self.acquiring = False
-        sys.stdout.write(f"Image aqcuiring : {self.acquiring}")
+        sys.stdout.write(f"Image aqcuiring : {self.acquiring}\n")
         sys.stdout.flush()
         self.timer.stop()
     
@@ -441,7 +441,7 @@ class LiveWindow(QMainWindow):
         self.ui.liveImageGraphics.ui.histogram.hide()
         self.ui.liveImageGraphics.ui.roiBtn.hide()
         self.ui.liveImageGraphics.ui.menuBtn.hide()
-        self.ui.liveImageGraphics.setImage(self.imgAcquireThread.data.T, autoLevels=True)
+        self.ui.liveImageGraphics.setImage(self.imgAcquireThread.data.T, autoLevels=True, autoRange=False)
         sys.stdout.write("Image plotted\n")
         sys.stdout.flush()
 
