@@ -6,37 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1260</width>
-    <height>758</height>
+    <width>1245</width>
+    <height>736</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>20</y>
-      <width>71</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Position</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="positionNoLine">
-    <property name="geometry">
-     <rect>
-      <x>90</x>
-      <y>20</y>
-      <width>113</width>
-      <height>25</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QListView" name="activePositions">
     <property name="geometry">
      <rect>
@@ -45,19 +22,6 @@
       <width>256</width>
       <height>351</height>
      </rect>
-    </property>
-   </widget>
-   <widget class="QLabel" name="channelNoLabel">
-    <property name="geometry">
-     <rect>
-      <x>240</x>
-      <y>20</y>
-      <width>91</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Channel No</string>
     </property>
    </widget>
    <widget class="QPushButton" name="removeButton">
@@ -115,37 +79,91 @@
    <widget class="ImageView" name="graphicsView">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>80</y>
-      <width>551</width>
-      <height>591</height>
+      <x>20</x>
+      <y>110</y>
+      <width>541</width>
+      <height>561</height>
      </rect>
     </property>
    </widget>
    <widget class="QGroupBox" name="filterParametersBox">
     <property name="geometry">
      <rect>
-      <x>600</x>
+      <x>610</x>
       <y>80</y>
       <width>341</width>
-      <height>401</height>
+      <height>261</height>
      </rect>
     </property>
     <property name="title">
      <string>Filter Parameters</string>
     </property>
+    <widget class="QWidget" name="formLayoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>30</y>
+       <width>261</width>
+       <height>201</height>
+      </rect>
+     </property>
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="windowLengthLabel">
+        <property name="text">
+         <string>Rolling window Length</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="windowLengthLine"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="areaLabel">
+        <property name="text">
+         <string>Area Threshold</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="lengthLabel">
+        <property name="text">
+         <string>Length Threshold</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSlider" name="areaSlider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSlider" name="lengthSlider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="cellObjectsLabel">
+        <property name="text">
+         <string>No of Cell like objects</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QSlider" name="cellObjectsSlider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </widget>
-   <widget class="QLineEdit" name="channelNoLine">
-    <property name="geometry">
-     <rect>
-      <x>330</x>
-      <y>20</y>
-      <width>113</width>
-      <height>25</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="nextAutoButton">
     <property name="geometry">
      <rect>
       <x>1090</x>
@@ -158,20 +176,7 @@
      <string>Next Auto</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="fetchButton">
-    <property name="geometry">
-     <rect>
-      <x>490</x>
-      <y>20</y>
-      <width>89</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Fetch</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButton_2">
+   <widget class="QPushButton" name="sendTweezePositionsButton">
     <property name="geometry">
      <rect>
       <x>980</x>
@@ -184,13 +189,114 @@
      <string>Send Tweeze Positions</string>
     </property>
    </widget>
+   <widget class="ImageView" name="propertiesView">
+    <property name="geometry">
+     <rect>
+      <x>610</x>
+      <y>410</y>
+      <width>321</width>
+      <height>241</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QWidget" name="horizontalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>10</y>
+      <width>401</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="positionLabel">
+       <property name="text">
+        <string>Position</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="positionNoLine"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="channelNoLabel">
+       <property name="text">
+        <string>Channel No</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="channelNoLine"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="fetchButton">
+       <property name="text">
+        <string>Fetch</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="horizontalLayoutWidget_2">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>60</y>
+      <width>491</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QRadioButton" name="phaseImage">
+       <property name="text">
+        <string>Phase</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="cellSegImage">
+       <property name="text">
+        <string>Cell Seg</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="horizontalLayoutWidget_3">
+    <property name="geometry">
+     <rect>
+      <x>570</x>
+      <y>340</y>
+      <width>391</width>
+      <height>61</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QPushButton" name="pushButton">
+       <property name="text">
+        <string>Update Filter Parameters</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="findLocationsButton">
+       <property name="text">
+        <string>Find All Tweezable Channels</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1260</width>
+     <width>1245</width>
      <height>22</height>
     </rect>
    </property>

@@ -6,15 +6,22 @@ from PySide6.QtUiTools import QUiLoader
 
 from narsil.liverun.ui.ui_LiveWindow import Ui_LiveWindow
 from narsil.liverun.utils import padTo32, imgFilenameFromNumber
+
+from narsil.segmentation.network import smallerUnet, basicUnet
 from pycromanager import Bridge
 
 from pathlib import Path
 from skimage import io
 
+from skimage.feature import canny
+from scipy.ndimage import binary_fill_holes, binary_erosion
+
+
 import sys
 import numpy as np
 import torch
 import random
+import cv2
 
 
 
@@ -85,7 +92,7 @@ class LiveWindow(QMainWindow):
         self.device = torch.device("cpu")
         self.pad = padTo32()
         self.timer = QTimer()
-        self.timer.setInterval(1000)
+        self.timer.setInterval(300)
     
     def closeEvent(self, event):
         self.stopAcquiring(True)
@@ -182,9 +189,10 @@ class LiveWindow(QMainWindow):
                     out_cpu = out.detach().cpu().numpy().squeeze(0).squeeze(0)
                     sys.stdout.write(f"Output shape: {out_cpu.shape}\n")
                     sys.stdout.flush()
-                
+               
                 self.ui.liveImageGraphics.setImage(out_cpu.T, autoLevels=True, autoRange=False)
             else:
+                #image = processImage(image)
                 self.ui.liveImageGraphics.setImage(image.T, autoLevels=True, autoRange=False)
 
         except Exception as e:
@@ -240,3 +248,12 @@ class LiveWindow(QMainWindow):
         sys.stdout.write(f"Image plotted : {self.imgAcquireThread.data.shape}\n")
         sys.stdout.flush()
 
+def processImage(image):
+
+    edges = canny(image, sigma=5)
+    barcodesImg = binary_fill_holes(edges)
+    barcodesImg = binary_erosion(barcodesImg).astype('uint8')
+    sys.stdout.write(f" --- Image Shape: {image.shape}\n")
+    sys.stdout.flush()
+
+    return barcodesImg
