@@ -8,6 +8,7 @@ import json
 import torch
 from collections import OrderedDict
 from skimage import transform
+import math
 import numpy as np
 
 class resizeOneImage(object):
@@ -224,3 +225,12 @@ def getMicroManagerPresets():
 
 def identifyChannels(image):
 	pass
+# In the datasets image names are img_000000000.tiff format.
+def imgFilenameFromNumber(number):
+    if number == 0:
+        num_digits = 1
+    else:
+        num_digits = int(math.log10(number)) + 1
+    imgFilename = 'img_' + '0' * (9 - num_digits) + str(number) + '.tiff'
+    return imgFilename
+
