@@ -299,7 +299,7 @@ class exptRun(object):
                         plugin='tifffile')
             sys.stdout.write(str(channelMaskFilename) + " written \n")
             sys.stdout.flush()
-        elif imageType == 'oneChannelCellSeg':
+        elif imageType == 'oneMMChannelCellSeg':
             pass
         elif imageType == 'oneMMChannelPhase':
             # check if there are locations

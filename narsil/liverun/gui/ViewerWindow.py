@@ -23,8 +23,7 @@ class ViewerWindow(QMainWindow):
         self.setWindowTitle("Dead-Alive Viewer Window")
 
         #
-        self.saveDir = saveDir
-        
+        self.saveDir = Path("/home/pk/Documents/realtimeData/analysisData/")
         self.database = database
 
         # thread object that will fetch 
@@ -41,9 +40,15 @@ class ViewerWindow(QMainWindow):
         self.showSeg = False
 
 
-        self.ui.activePositions.setSortingEnabled(True)
-
+        self.ui.activePositionsList.setSortingEnabled(True)
         self.activePositions = []
+
+
+        self.rollingWindow = None
+        self.rollingWindowValidator = QIntValidator(0, 99, self.ui.windowLengthLine)
+        self.areaThreshold = None
+        self.lengthThreshold = None
+        self.noCellObjects = None
 
         self.sentPositions = []
 
@@ -76,6 +81,8 @@ class ViewerWindow(QMainWindow):
         self.ui.isExptRunning.toggled.connect(self.setExptRunning)
 
         # rolling window width
+        self.ui.windowLengthLine.setValidator(self.rollingWindowValidator)
+        self.ui.windowLengthLine.textChanged.connect(self.setRollingWindow)
 
         # area threshold slider handler
 
@@ -86,18 +93,29 @@ class ViewerWindow(QMainWindow):
         # Update filter parameters button
 
         # find all tweezalbe channels button
+        self.ui.findLocationsButton.clicked.connect(self.getAllLocationsFake)
+
+
+        # hook up if the selection changed
+        self.ui.activePositionsList.itemSelectionChanged.connect(self.showCurrentPosition)
 
         # show position button?
+        self.ui.showButton.clicked.connect(self.showCurrentPosition)
 
         # remove position button
+        self.ui.removeButton.clicked.connect(self.removeCurrentPosition)
 
         # undo position button
+        self.ui.undoButton.clicked.connect(self.undoRemovedPosition)
 
         # reset position button
+        self.ui.resetButton.clicked.connect(self.resetAllPositions)
 
         # next auto
+        self.ui.nextAutoButton.clicked.connect(self.nextAutoPosition)
 
         # send tweeze positions to main window button 
+        self.ui.sendTweezePositionsButton.clicked.connect(self.sendTweezableToMain)
     
     def positionChanged(self):
         position = self.ui.positionNoLine.text()
@@ -139,9 +157,75 @@ class ViewerWindow(QMainWindow):
         # is done call the plotter
         sys.stdout.write("Fetch Button clicked\n")
         sys.stdout.flush()
-        self.imageFetchThread =  ImageFetchThread({'position': 100, 'time': 1})
-        self.imageFetchThread.start()
-        self.imageFetchThread.dataFetched.connect(self.updateImage)
+        imgType = 'phase' if self.showPhase else 'cellSeg'
+
+        if self.imageFetchThread is None:
+            self.imageFetchThread =  ImageFetchThread({'positionNo': self.currentPosition, 
+                                'channelNo': self.currentChannelNo,
+                                'type': imgType,
+                                'dir': self.saveDir})
+            self.imageFetchThread.start()
+            self.imageFetchThread.dataFetched.connect(self.updateImage)
+
+    def setRollingWindow(self):
+        rollingWindow = self.ui.windowLengthLine.text()
+        try:
+            intWindow = int(rollingWindow)
+        except:
+            self.ui.windowLengthLine.setText("")
+            intWindow = None
+        finally:
+            self.rollingWindow = intWindow
+        sys.stdout.write(f"Rolling window length : {self.rollingWindow}\n")
+        sys.stdout.flush()
+
+
+    def getAllLocationsFake(self, clicked):
+        # populate the list widget will all possible locations
+        position = 3
+        for channelNo in range(0, 100):
+            item = "Pos: "  + str(position) + " Ch: " + str(channelNo)
+            self.ui.activePositionsList.addItem(item)
+            self.activePositions.append((position, channelNo))
+
+        if len(self.activePositions) > 0:
+            self.ui.activePositionsList.setCurrentRow(0)
+
+    def showCurrentPosition(self, clicked=None):
+        try:
+            selectedItem = self.ui.activePositionsList.currentItem().text()
+            position = int(selectedItem.split(" ")[1])
+            channelNo = int(selectedItem.split(" ")[3])
+            sys.stdout.write(f"Selected row is -- {position} -- {channelNo} \n")
+            sys.stdout.flush()
+        except:
+            self.currentPosition = None
+            self.currentChannelNo = None
+            sys.stdout.write("Selection couldn't be got \n")
+            sys.stdout.flush()
+        finally:
+            self.currentPosition = position
+            self.currentChannelNo = channelNo
+            self.fetchData()
+
+    def removeCurrentPosition(self, clicked):
+        pass
+
+    def undoRemovedPosition(self, clicked):
+        pass
+
+    def resetAllPositions(self, clicked):
+        pass
+
+    def nextAutoPosition(self, clicked):
+        pass 
+
+    def sendTweezableToMain(self, clicked):
+        pass
+
+    def getAllLocations(self):
+        # populate the list widget with possible tweeze locations
+        pass
 
     def updateImage(self):
         sys.stdout.write("Image received\n")
@@ -149,6 +233,7 @@ class ViewerWindow(QMainWindow):
         self.ui.imagePlot.setImage(self.imageFetchThread.data, autoLevels=True)
         sys.stdout.write("Image plotted\n")
         sys.stdout.flush()
+        self.imageFetchThread = None
 
 class ImageFetchThread(QThread):
 
@@ -161,12 +246,17 @@ class ImageFetchThread(QThread):
 
     def run(self):
         # run code and fetch stuff
-        sys.stdout.write(f"Fetch image thread to get position: {self.fetch_data['position']} and time: {self.fetch_data['time']} \n")
+        sys.stdout.write(f"Fetch image thread to get position: {self.fetch_data['positionNo']} and channelNo: {self.fetch_data['channelNo']} \n")
         sys.stdout.flush()
         try:
-            number_images = np.random.randint(low=0, high=39)
+            # fetch all the images that are there in the directory
             # construct image by fetching
-            directory = Path("/home/pk/Documents/realtimeData/analysisData/3/oneMMChannelPhase/10/")
+            if self.fetch_data['type'] == 'phase':
+                directory = self.fetch_data['dir'] / str(self.fetch_data['positionNo']) / "oneMMChannelPhase" / str(self.fetch_data['channelNo'])
+            elif self.fetch_data['type'] == 'cellSeg':
+                directory = self.fetch_data['dir'] / str(self.fetch_data['positionNo']) / "oneMMChannelCellSeg" / str(self.fetch_data['channelNo'])
+
+            number_images = 20
             
             files = [ directory / (str(i) + '.tiff') for i in range(0, number_images)]
 
@@ -188,4 +278,3 @@ class ImageFetchThread(QThread):
 
     def getData(self):
         return self.data
-

@@ -296,7 +296,7 @@
      <string>Is Expt running?</string>
     </property>
    </widget>
-   <widget class="QListWidget" name="activePositions">
+   <widget class="QListWidget" name="activePositionsList">
     <property name="geometry">
      <rect>
       <x>970</x>
