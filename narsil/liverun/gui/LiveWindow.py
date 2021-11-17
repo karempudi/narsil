@@ -1,5 +1,6 @@
 
 
+from enum import auto
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
 from PySide6.QtCore import QFile, QIODevice, QTimer, Signal, Qt, QThread
 from PySide6.QtUiTools import QUiLoader
@@ -22,6 +23,7 @@ import numpy as np
 import torch
 import random
 import cv2
+from datetime import datetime
 
 
 
@@ -118,7 +120,7 @@ class LiveWindow(QMainWindow):
 
     def setCellSegNet(self, buttonState):
         if buttonState == True:
-            self.segCells = False
+            self.segCells = True
             sys.stdout.write(f"Loading cell seg net: {self.parameters['cellSegNetModelPath']}\n")
             sys.stdout.flush()
 
@@ -174,6 +176,7 @@ class LiveWindow(QMainWindow):
             randomNumber = random.randint(0, 39)
             path = "/home/pk/Documents/realtimeData/hetero40x/Pos103/phaseFast/" + imgFilenameFromNumber(randomNumber)
 
+            #path = "D:\\praneeth\\hetero40x\\Pos103\\phaseFast\\" + imgFilenameFromNumber(randomNumber)
             #imageFilename =  Path("/home/pk/Documents/realtimeData/hetero40x/Pos103/phaseFast/img_000000000.tiff")
             imageFilename = Path(path)
             image = io.imread(imageFilename)
@@ -187,10 +190,19 @@ class LiveWindow(QMainWindow):
                     imgTensor = (imgTensor - torch.mean(imgTensor))/torch.std(imgTensor)
                     out = torch.sigmoid(self.channelSegNet(imgTensor))
                     out_cpu = out.detach().cpu().numpy().squeeze(0).squeeze(0)
-                    sys.stdout.write(f"Output shape: {out_cpu.shape}\n")
+                    sys.stdout.write(f"Output shape: {out_cpu.shape} --- {datetime.now()}\n")
                     sys.stdout.flush()
-               
                 self.ui.liveImageGraphics.setImage(out_cpu.T, autoLevels=True, autoRange=False)
+            elif self.segCells:
+                with torch.no_grad():
+                    imgTensor = (imgTensor - torch.mean(imgTensor))/torch.std(imgTensor)
+                    out = torch.sigmoid(self.cellSegNet(imgTensor))
+                    out_cpu = out.detach().cpu().numpy().squeeze(0).squeeze(0)
+                    sys.stdout.write(f"Output shape: {out_cpu.shape} --- {datetime.now()}\n")
+                    sys.stdout.flush()
+            
+                self.ui.liveImageGraphics.setImage(out_cpu.T, autoLevels=True, autoRange=False)
+                
             else:
                 #image = processImage(image)
                 self.ui.liveImageGraphics.setImage(image.T, autoLevels=True, autoRange=False)
