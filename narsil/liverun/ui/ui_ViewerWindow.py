@@ -15,12 +15,13 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QFormLayout, QGroupBox, QHBoxLayout,
-    QLabel, QLineEdit, QListView, QMainWindow,
-    QMenuBar, QPushButton, QRadioButton, QSizePolicy,
-    QSlider, QStatusBar, QWidget)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QFormLayout, QGroupBox,
+    QHBoxLayout, QLabel, QLineEdit, QListWidget,
+    QListWidgetItem, QMainWindow, QMenuBar, QPushButton,
+    QRadioButton, QSizePolicy, QSlider, QStatusBar,
+    QWidget)
 
-from pyqtgraph import ImageView
+from pyqtgraph import (ImageView, PlotWidget)
 
 class Ui_ViewerWindow(object):
     def setupUi(self, ViewerWindow):
@@ -29,9 +30,6 @@ class Ui_ViewerWindow(object):
         ViewerWindow.resize(1245, 736)
         self.centralwidget = QWidget(ViewerWindow)
         self.centralwidget.setObjectName(u"centralwidget")
-        self.activePositions = QListView(self.centralwidget)
-        self.activePositions.setObjectName(u"activePositions")
-        self.activePositions.setGeometry(QRect(970, 80, 256, 351))
         self.removeButton = QPushButton(self.centralwidget)
         self.removeButton.setObjectName(u"removeButton")
         self.removeButton.setGeometry(QRect(1090, 450, 89, 25))
@@ -44,9 +42,9 @@ class Ui_ViewerWindow(object):
         self.resetButton = QPushButton(self.centralwidget)
         self.resetButton.setObjectName(u"resetButton")
         self.resetButton.setGeometry(QRect(1090, 490, 89, 25))
-        self.graphicsView = ImageView(self.centralwidget)
-        self.graphicsView.setObjectName(u"graphicsView")
-        self.graphicsView.setGeometry(QRect(20, 110, 541, 561))
+        self.imagePlot = ImageView(self.centralwidget)
+        self.imagePlot.setObjectName(u"imagePlot")
+        self.imagePlot.setGeometry(QRect(20, 110, 541, 561))
         self.filterParametersBox = QGroupBox(self.centralwidget)
         self.filterParametersBox.setObjectName(u"filterParametersBox")
         self.filterParametersBox.setGeometry(QRect(610, 80, 341, 261))
@@ -105,7 +103,7 @@ class Ui_ViewerWindow(object):
         self.sendTweezePositionsButton = QPushButton(self.centralwidget)
         self.sendTweezePositionsButton.setObjectName(u"sendTweezePositionsButton")
         self.sendTweezePositionsButton.setGeometry(QRect(980, 630, 191, 25))
-        self.propertiesView = ImageView(self.centralwidget)
+        self.propertiesView = PlotWidget(self.centralwidget)
         self.propertiesView.setObjectName(u"propertiesView")
         self.propertiesView.setGeometry(QRect(610, 410, 321, 241))
         self.horizontalLayoutWidget = QWidget(self.centralwidget)
@@ -147,6 +145,7 @@ class Ui_ViewerWindow(object):
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.phaseImage = QRadioButton(self.horizontalLayoutWidget_2)
         self.phaseImage.setObjectName(u"phaseImage")
+        self.phaseImage.setChecked(True)
 
         self.horizontalLayout_2.addWidget(self.phaseImage)
 
@@ -171,6 +170,12 @@ class Ui_ViewerWindow(object):
 
         self.horizontalLayout_3.addWidget(self.findLocationsButton)
 
+        self.isExptRunning = QCheckBox(self.centralwidget)
+        self.isExptRunning.setObjectName(u"isExptRunning")
+        self.isExptRunning.setGeometry(QRect(460, 20, 131, 23))
+        self.activePositions = QListWidget(self.centralwidget)
+        self.activePositions.setObjectName(u"activePositions")
+        self.activePositions.setGeometry(QRect(970, 10, 256, 421))
         ViewerWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(ViewerWindow)
         self.menubar.setObjectName(u"menubar")
@@ -205,5 +210,6 @@ class Ui_ViewerWindow(object):
         self.cellSegImage.setText(QCoreApplication.translate("ViewerWindow", u"Cell Seg", None))
         self.pushButton.setText(QCoreApplication.translate("ViewerWindow", u"Update Filter Parameters", None))
         self.findLocationsButton.setText(QCoreApplication.translate("ViewerWindow", u"Find All Tweezable Channels", None))
+        self.isExptRunning.setText(QCoreApplication.translate("ViewerWindow", u"Is Expt running?", None))
     # retranslateUi
 

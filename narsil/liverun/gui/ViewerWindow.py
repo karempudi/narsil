@@ -1,6 +1,7 @@
 
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QFileDialog
-from PySide6.QtCore import QFile, QIODevice, QTimer, Signal, Qt, QThread
+from PySide6.QtCore import QFile, QIODevice, QTimer, Signal, Qt, QThread 
+from PySide6.QtGui import QIntValidator
 from PySide6.QtUiTools import QUiLoader
 
 from narsil.liverun.ui.ui_ViewerWindow import Ui_ViewerWindow
@@ -15,21 +16,123 @@ import sys
 class ViewerWindow(QMainWindow):
 
 
-    def __init__(self):
+    def __init__(self, saveDir=None, database=None):
         super(ViewerWindow, self).__init__()
         self.ui = Ui_ViewerWindow()
         self.ui.setupUi(self)
         self.setWindowTitle("Dead-Alive Viewer Window")
 
+        #
+        self.saveDir = saveDir
+        
+        self.database = database
+
         # thread object that will fetch 
         self.imageFetchThread = None
+
+        self.currentPosition = None
+        self.positionNoValidator = QIntValidator(0, 10000, self.ui.positionNoLine)
+        self.channelNoValidator = QIntValidator(0, 200, self.ui.channelNoLine)
+        self.currentChannelNo = None
+
+        self.exptRunning = False
+
+        self.showPhase = True
+        self.showSeg = False
+
+
+        self.ui.activePositions.setSortingEnabled(True)
+
+        self.activePositions = []
+
+        self.sentPositions = []
+
 
         self.setupButtonHandlers()
 
     def setupButtonHandlers(self,):
+        # adjust plotting stuff
+        self.ui.imagePlot.ui.histogram.hide()
+        self.ui.imagePlot.ui.roiBtn.hide()
+        self.ui.imagePlot.ui.menuBtn.hide()
+
+
+        # set positionNo validator
+        self.ui.positionNoLine.setValidator(self.positionNoValidator)
+        self.ui.positionNoLine.textChanged.connect(self.positionChanged)
+
+        # set channelNo validator
+        self.ui.channelNoLine.setValidator(self.channelNoValidator)
+        self.ui.channelNoLine.textChanged.connect(self.channelNoChanged)
+
+        # set option handlers to show phase or seg
+        self.ui.phaseImage.toggled.connect(self.setImageType)
+        self.ui.cellSegImage.toggled.connect(self.setImageType)
+
         # fetch button handler 
         self.ui.fetchButton.clicked.connect(self.fetchData)
 
+        # set expt running options useful for not doing database connections over and over again
+        self.ui.isExptRunning.toggled.connect(self.setExptRunning)
+
+        # rolling window width
+
+        # area threshold slider handler
+
+        # length threshold slider handler
+
+        # no of cell like objects slider
+
+        # Update filter parameters button
+
+        # find all tweezalbe channels button
+
+        # show position button?
+
+        # remove position button
+
+        # undo position button
+
+        # reset position button
+
+        # next auto
+
+        # send tweeze positions to main window button 
+    
+    def positionChanged(self):
+        position = self.ui.positionNoLine.text()
+        try:
+            intPosition = int(position)
+        except:
+            self.ui.positionNoLine.setText("")
+            intPosition = None
+        finally:
+            self.currentPosition = intPosition
+        sys.stdout.write(f"Position set to {self.currentPosition}\n")
+        sys.stdout.flush()
+
+    def channelNoChanged(self):
+        channelNo = self.ui.channelNoLine.text()
+        try:
+            intChannelNo  = int(channelNo)
+        except:
+            self.ui.channelNoLine.setText("")
+            intChannelNo = None
+        finally:
+            self.currentChannelNo = intChannelNo
+        sys.stdout.write(f"Channel no set to {self.currentChannelNo}\n")
+        sys.stdout.flush()
+    
+    def setImageType(self, clicked):
+        self.showSeg = self.ui.cellSegImage.isChecked()
+        self.showPhase = self.ui.phaseImage.isChecked()
+        sys.stdout.write(f"Phase: {self.showPhase} Seg: {self.showSeg}\n")
+        sys.stdout.flush()
+
+    def setExptRunning(self, buttonState):
+        self.exptRunning = buttonState
+        sys.stdout.write(f"Expt is running : {self.exptRunning}\n")
+        sys.stdout.flush()
 
     def fetchData(self):
         # create a thread and call to get the data, once the data fetching
@@ -43,10 +146,7 @@ class ViewerWindow(QMainWindow):
     def updateImage(self):
         sys.stdout.write("Image received\n")
         sys.stdout.flush()
-        self.ui.graphicsView.ui.histogram.hide()
-        self.ui.graphicsView.ui.roiBtn.hide()
-        self.ui.graphicsView.ui.menuBtn.hide()
-        self.ui.graphicsView.setImage(self.imageFetchThread.data, autoLevels=True)
+        self.ui.imagePlot.setImage(self.imageFetchThread.data, autoLevels=True)
         sys.stdout.write("Image plotted\n")
         sys.stdout.flush()
 

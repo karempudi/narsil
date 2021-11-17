@@ -14,16 +14,6 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QListView" name="activePositions">
-    <property name="geometry">
-     <rect>
-      <x>970</x>
-      <y>80</y>
-      <width>256</width>
-      <height>351</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QPushButton" name="removeButton">
     <property name="geometry">
      <rect>
@@ -76,7 +66,7 @@
      <string>Reset</string>
     </property>
    </widget>
-   <widget class="ImageView" name="graphicsView">
+   <widget class="ImageView" name="imagePlot">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -189,7 +179,7 @@
      <string>Send Tweeze Positions</string>
     </property>
    </widget>
-   <widget class="ImageView" name="propertiesView">
+   <widget class="PlotWidget" name="propertiesView">
     <property name="geometry">
      <rect>
       <x>610</x>
@@ -253,6 +243,9 @@
        <property name="text">
         <string>Phase</string>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -290,6 +283,29 @@
      </item>
     </layout>
    </widget>
+   <widget class="QCheckBox" name="isExptRunning">
+    <property name="geometry">
+     <rect>
+      <x>460</x>
+      <y>20</y>
+      <width>131</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Is Expt running?</string>
+    </property>
+   </widget>
+   <widget class="QListWidget" name="activePositions">
+    <property name="geometry">
+     <rect>
+      <x>970</x>
+      <y>10</y>
+      <width>256</width>
+      <height>421</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -306,6 +322,11 @@
  <customwidgets>
   <customwidget>
    <class>ImageView</class>
+   <extends>QGraphicsView</extends>
+   <header>pyqtgraph</header>
+  </customwidget>
+  <customwidget>
+   <class>PlotWidget</class>
    <extends>QGraphicsView</extends>
    <header>pyqtgraph</header>
   </customwidget>
