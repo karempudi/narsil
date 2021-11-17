@@ -206,10 +206,28 @@ class ViewerWindow(QMainWindow):
         finally:
             self.currentPosition = position
             self.currentChannelNo = channelNo
+            self.ui.positionNoLine.setText(str(self.currentPosition))
+            self.ui.channelNoLine.setText(str(self.currentChannelNo))
             self.fetchData()
 
     def removeCurrentPosition(self, clicked):
-        pass
+        try:
+            selectedItems = self.ui.activePositionsList.selectedItems()
+            for item in selectedItems:
+                self.ui.activePositionsList.takeItem(self.ui.activePositionsList.row(item))
+                itemText = item.text()
+                position = int(itemText.split(" ")[1])
+                channelNo = int(itemText.split(" ")[3])
+                self.activePositions.remove((position, channelNo))
+                sys.stdout.write(f"Deleting {itemText}\n")
+                sys.stdout.flush()
+        except:
+            sys.stdout.write(f"Nothing to remove\n")
+            sys.stdout.flush()
+        finally:
+            if len(self.activePositions) == 0:
+                self.currentPosition = None
+                self.currentChannelNo = None
 
     def undoRemovedPosition(self, clicked):
         pass

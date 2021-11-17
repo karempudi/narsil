@@ -15,11 +15,11 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QCheckBox, QFormLayout, QGroupBox,
-    QHBoxLayout, QLabel, QLineEdit, QListWidget,
-    QListWidgetItem, QMainWindow, QMenuBar, QPushButton,
-    QRadioButton, QSizePolicy, QSlider, QStatusBar,
-    QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QFormLayout,
+    QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+    QListWidget, QListWidgetItem, QMainWindow, QMenuBar,
+    QPushButton, QRadioButton, QSizePolicy, QSlider,
+    QStatusBar, QWidget)
 
 from pyqtgraph import (ImageView, PlotWidget)
 
@@ -176,6 +176,7 @@ class Ui_ViewerWindow(object):
         self.activePositionsList = QListWidget(self.centralwidget)
         self.activePositionsList.setObjectName(u"activePositionsList")
         self.activePositionsList.setGeometry(QRect(970, 10, 256, 421))
+        self.activePositionsList.setSelectionMode(QAbstractItemView.ExtendedSelection)
         ViewerWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(ViewerWindow)
         self.menubar.setObjectName(u"menubar")
