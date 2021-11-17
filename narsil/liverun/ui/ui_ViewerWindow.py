@@ -27,7 +27,7 @@ class Ui_ViewerWindow(object):
     def setupUi(self, ViewerWindow):
         if not ViewerWindow.objectName():
             ViewerWindow.setObjectName(u"ViewerWindow")
-        ViewerWindow.resize(1245, 736)
+        ViewerWindow.resize(1566, 736)
         self.centralwidget = QWidget(ViewerWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.removeButton = QPushButton(self.centralwidget)
@@ -177,10 +177,20 @@ class Ui_ViewerWindow(object):
         self.activePositionsList.setObjectName(u"activePositionsList")
         self.activePositionsList.setGeometry(QRect(970, 10, 256, 421))
         self.activePositionsList.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.tweezePositionsList = QListWidget(self.centralwidget)
+        self.tweezePositionsList.setObjectName(u"tweezePositionsList")
+        self.tweezePositionsList.setGeometry(QRect(1280, 10, 256, 421))
+        self.tweezePositionsList.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.toTweezeListButton = QPushButton(self.centralwidget)
+        self.toTweezeListButton.setObjectName(u"toTweezeListButton")
+        self.toTweezeListButton.setGeometry(QRect(1230, 210, 41, 21))
+        self.toActiveListButton = QPushButton(self.centralwidget)
+        self.toActiveListButton.setObjectName(u"toActiveListButton")
+        self.toActiveListButton.setGeometry(QRect(1230, 270, 41, 21))
         ViewerWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(ViewerWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1245, 22))
+        self.menubar.setGeometry(QRect(0, 0, 1566, 22))
         ViewerWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(ViewerWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -212,5 +222,7 @@ class Ui_ViewerWindow(object):
         self.pushButton.setText(QCoreApplication.translate("ViewerWindow", u"Update Filter Parameters", None))
         self.findLocationsButton.setText(QCoreApplication.translate("ViewerWindow", u"Find All Tweezable Channels", None))
         self.isExptRunning.setText(QCoreApplication.translate("ViewerWindow", u"Is Expt running?", None))
+        self.toTweezeListButton.setText(QCoreApplication.translate("ViewerWindow", u">>", None))
+        self.toActiveListButton.setText(QCoreApplication.translate("ViewerWindow", u"<<", None))
     # retranslateUi
 

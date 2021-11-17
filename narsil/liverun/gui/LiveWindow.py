@@ -94,7 +94,7 @@ class LiveWindow(QMainWindow):
         self.device = torch.device("cpu")
         self.pad = padTo32()
         self.timer = QTimer()
-        self.timer.setInterval(300)
+        self.timer.setInterval(100)
     
     def closeEvent(self, event):
         self.stopAcquiring(True)
@@ -119,16 +119,14 @@ class LiveWindow(QMainWindow):
             sys.stdout.flush()
 
     def setCellSegNet(self, buttonState):
-        if buttonState == True:
-            self.segCells = True
-            sys.stdout.write(f"Loading cell seg net: {self.parameters['cellSegNetModelPath']}\n")
-            sys.stdout.flush()
+        self.segCells = buttonState
+        sys.stdout.write(f"Loading cell seg net: {self.parameters['cellSegNetModelPath']}\n")
+        sys.stdout.flush()
 
     def setChannelSegNet(self, buttonState):
-        if buttonState == True:
-            self.segChannels = True
-            sys.stdout.write(f"Loading channel seg net: {self.parameters['channelSegNetModelPath']}\n")
-            sys.stdout.flush()
+        self.segChannels = buttonState
+        sys.stdout.write(f"Loading channel seg net: {self.parameters['channelSegNetModelPath']}\n")
+        sys.stdout.flush()
 
     def acquireLive(self):
         # grab an image every 200 ms and pipe it throught the 
@@ -196,6 +194,7 @@ class LiveWindow(QMainWindow):
             elif self.segCells:
                 with torch.no_grad():
                     imgTensor = (imgTensor - torch.mean(imgTensor))/torch.std(imgTensor)
+                    imgTensor += torch.randn(imgTensor.shape, device=self.device)
                     out = torch.sigmoid(self.cellSegNet(imgTensor))
                     out_cpu = out.detach().cpu().numpy().squeeze(0).squeeze(0)
                     sys.stdout.write(f"Output shape: {out_cpu.shape} --- {datetime.now()}\n")
