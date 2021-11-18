@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1131</width>
-    <height>763</height>
+    <height>801</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -165,6 +165,19 @@
     </property>
     <property name="text">
      <string>GPU</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="isLiveCheckBox">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>80</y>
+      <width>92</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Live</string>
     </property>
    </widget>
   </widget>

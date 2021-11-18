@@ -94,7 +94,7 @@ class LiveWindow(QMainWindow):
         self.device = torch.device("cpu")
         self.pad = padTo32()
         self.timer = QTimer()
-        self.timer.setInterval(100)
+        self.timer.setInterval(300)
     
     def closeEvent(self, event):
         self.stopAcquiring(True)
@@ -172,8 +172,9 @@ class LiveWindow(QMainWindow):
 
         try:
             randomNumber = random.randint(0, 39)
-            path = "/home/pk/Documents/realtimeData/hetero40x/Pos103/phaseFast/" + imgFilenameFromNumber(randomNumber)
+            #path = "/home/pk/Documents/realtimeData/hetero40x/Pos103/phaseFast/" + imgFilenameFromNumber(randomNumber)
 
+            path = "/home/pk/Documents/EXP-21-BY1006/therun/Pos12/phase/" + imgFilenameFromNumber(randomNumber)
             #path = "D:\\praneeth\\hetero40x\\Pos103\\phaseFast\\" + imgFilenameFromNumber(randomNumber)
             #imageFilename =  Path("/home/pk/Documents/realtimeData/hetero40x/Pos103/phaseFast/img_000000000.tiff")
             imageFilename = Path(path)
@@ -194,7 +195,7 @@ class LiveWindow(QMainWindow):
             elif self.segCells:
                 with torch.no_grad():
                     imgTensor = (imgTensor - torch.mean(imgTensor))/torch.std(imgTensor)
-                    imgTensor += torch.randn(imgTensor.shape, device=self.device)
+                    #imgTensor += torch.randn(imgTensor.shape, device=self.device)
                     out = torch.sigmoid(self.cellSegNet(imgTensor))
                     out_cpu = out.detach().cpu().numpy().squeeze(0).squeeze(0)
                     sys.stdout.write(f"Output shape: {out_cpu.shape} --- {datetime.now()}\n")
