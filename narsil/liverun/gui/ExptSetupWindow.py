@@ -5,9 +5,7 @@ from PySide6.QtUiTools import QUiLoader
 
 from narsil.liverun.ui.ui_SetupWindow import Ui_SetupWindow
 from narsil.liverun.gui.EventsWindow import EventsWindow
-
-
-
+import sys
 
 class ExptSetupWindow(QMainWindow):
 
@@ -43,6 +41,7 @@ class ExptSetupWindow(QMainWindow):
         self.exptSetupData = None # assign later when the events windows closes
         self.exptDir = '.'
         self.exptSettings= {}
+        self.mmVersion=2
 
         # additional window references that are needed
         self.eventsWindow = EventsWindow()
@@ -78,8 +77,14 @@ class ExptSetupWindow(QMainWindow):
         self.ui.fromFile.toggled.connect(self.fileOptionClicked)
         self.ui.fromMicroManager.toggled.connect(self.micromanagerOptionClicked)
 
+
+
         # select file button
         self.ui.fileSelectionButton.clicked.connect(self.selectPositionsFile)
+
+        # micromanager version selection
+        self.ui.version1Button.toggled.connect(self.setMicroManagerVersion)
+        self.ui.version2Button.toggled.connect(self.setMicroManagerVersion)
 
         # create events button, opens new window
         self.ui.eventsCreationButton.clicked.connect(self.createEvents)
@@ -111,11 +116,8 @@ class ExptSetupWindow(QMainWindow):
         # validate analysis setup
         self.ui.validateAnalysisSetupButton.clicked.connect(self.validateAnalysisSetup)
 
-
-
         # save button and the close button
         self.ui.closeExptSetupButton.clicked.connect(self.closeWindow)
-        
 
         
     def setExptNo(self, clicked):
@@ -146,11 +148,20 @@ class ExptSetupWindow(QMainWindow):
         self.eventsWindow.usePositionsFile = self.positionsFromFile 
         print(f"File option toggled {self.positionsFromFile}")
 
-
     def micromanagerOptionClicked(self, clicked):
         self.positionsFromFile = not self.ui.fromMicroManager.isChecked()
         self.eventsWindow.usePositionsFile = self.positionsFromFile
         print(f"Micromanger option toggled: {self.positionsFromFile}")
+    
+    def setMicroManagerVersion(self, clicked):
+        if self.ui.version1Button.isChecked():
+            self.mmVersion = 1
+            self.eventsWindow.mmVersion = 1
+        else:
+            self.mmVersion = 2
+            self.eventsWindow.mmVersion = 2
+        sys.stdout.write(f"Micromanager version set to: {self.mmVersion}\n")
+        sys.stdout.flush()
 
     def selectPositionsFile(self, clicked):
         if self.positionsFromFile == True:
@@ -223,7 +234,8 @@ class ExptSetupWindow(QMainWindow):
             "timeInterval": self.exptSetupData['timeInterval'],
             "exptNo": self.exptNo,
             "positionsFileName": self.positionsFileName,
-            "posFromFile": self.positionsFromFile
+            "posFromFile": self.positionsFromFile,
+            "mmVersion": self.mmVersion
         }
         self.setupDone.emit(self.exptSettings)
     

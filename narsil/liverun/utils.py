@@ -11,6 +11,7 @@ from skimage import transform
 import math
 import numpy as np
 
+
 class resizeOneImage(object):
 
 	def __init__(self, imgResizeShape, imgToNetSize):
@@ -134,41 +135,66 @@ def getPositionFileName():
 		sys.exit()
 
 """ 
-Parse positions list file from micromanager 2.0 and return and orderedDict
+Parse positions list file from micromanager 2.0 or 1.0 and return and orderedDict
 of positions, PFS offset to be piped into creation of events for Pycromanager
 """
-def parsePositionsFile(positionFileName, pfsDeviceIndex=0, XYStageIndex=1):
+def parsePositionsFile(positionFileName, version=2):
 	print(f"Positions File name given is: \n")
 	print(positionFileName)
 	print("---------------------------------")
 	# some constants for eading the data arrays from the positions file
 	# this things might change names depending on the version of micromanger
 	# so made them into variable, also double quotes are annoying to write
-	mapping = "map"
-	stagePositions = "StagePositions"
-	array = "array"
-	label = "Label"
-	devicePositions = "DevicePositions"
-	position_um = "Position_um"
-	pfsDevice = pfsDeviceIndex
-	xyDevice = XYStageIndex
-	x = 0
-	y = 1
-	scalar = "scalar"
-	positionsData = {}
 
-	with open(positionFileName) as json_file:
-		data = json.load(json_file)
+	if version == 2:
+
+		pfsDeviceIndex = 0
+		XYStageIndex = 1
+		mapping = "map"
+		stagePositions = "StagePositions"
+		array = "array"
+		label = "Label"
+		devicePositions = "DevicePositions"
+		position_um = "Position_um"
+		pfsDevice = pfsDeviceIndex
+		xyDevice = XYStageIndex
+		x = 0
+		y = 1
+		scalar = "scalar"
+		positionsData = {}
+
+		with open(positionFileName) as json_file:
+			data = json.load(json_file)
+			
+			for item in data[mapping][stagePositions][array]:
+				positionsData[item[label][scalar]] = {'x_coordinate': item[devicePositions][array][xyDevice][position_um][array][x],
+					'y_coordinate': item[devicePositions][array][xyDevice][position_um][array][y],
+					'pfs_offset': item[devicePositions][array][pfsDevice][position_um][array][x]
+				}
+
+		sorted_data = dict(sorted(positionsData.items(), key=lambda kv: int(kv[0][3:])))
+
+		return OrderedDict(sorted_data)
+	
+	elif version == 1:
+
+		positionsData = {}
+
+		with open(positionFileName) as json_file:
+			data = json.load(json_file)
+
+			for item in data['POSITIONS']:
+				positionsData[item['LABEL']] = {
+					'x_coordinate': item['DEVICES'][1]['X'],
+					'y_coordinate': item['DEVICES'][1]['Y'],
+					'pfs_offset': item['DEVICES'][0]['X']
+				}
 		
-		for item in data[mapping][stagePositions][array]:
-			positionsData[item[label][scalar]] = {'x_coordinate': item[devicePositions][array][xyDevice][position_um][array][x],
-				 'y_coordinate': item[devicePositions][array][xyDevice][position_um][array][y],
-				 'pfs_offset': item[devicePositions][array][pfsDevice][position_um][array][x]
-			}
+		sorted_data = dict(sorted(positionsData.items(), key=lambda kv: int(kv[0][3:])))
 
-	sorted_data = dict(sorted(positionsData.items(), key=lambda kv: int(kv[0][3:])))
+		#print(sorted_data)
 
-	return OrderedDict(sorted_data)
+		return OrderedDict(sorted_data)
 
 """
 Function to create events that are used by pycromanager, 
@@ -202,7 +228,7 @@ def phaseTimeSeriesEvents(positionsData, acquisitionParameters):
 
 	return events 
 
-def getPositionList(filename=None):
+def getPositionList(filename=None, version=2):
     # if the filename is None, then just load something for test purposes
     if filename is None:
         positions = {}
@@ -210,7 +236,7 @@ def getPositionList(filename=None):
             positions['Pos' + str(i)] = {'x_coordinate':0, 'y_coordinate': 0, 'pfs_offset': 0}
         return positions
     else:
-        positions = parsePositionsFile(filename)
+        positions = parsePositionsFile(filename, version)
         return positions
 
 

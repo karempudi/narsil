@@ -18,7 +18,8 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QTransform)
 from PySide6.QtWidgets import (QApplication, QGroupBox, QHBoxLayout, QLabel,
     QLineEdit, QMainWindow, QMenu, QMenuBar,
-    QPushButton, QSizePolicy, QStatusBar, QWidget)
+    QProgressBar, QPushButton, QSizePolicy, QStatusBar,
+    QVBoxLayout, QWidget)
 
 from pyqtgraph import PlotWidget
 
@@ -139,6 +140,153 @@ class Ui_MainWindow(object):
         self.resetButton = QPushButton(self.centralwidget)
         self.resetButton.setObjectName(u"resetButton")
         self.resetButton.setGeometry(QRect(610, 780, 75, 23))
+        self.experimentProgressBox = QGroupBox(self.centralwidget)
+        self.experimentProgressBox.setObjectName(u"experimentProgressBox")
+        self.experimentProgressBox.setGeometry(QRect(20, 460, 631, 301))
+        self.verticalLayoutWidget = QWidget(self.experimentProgressBox)
+        self.verticalLayoutWidget.setObjectName(u"verticalLayoutWidget")
+        self.verticalLayoutWidget.setGeometry(QRect(20, 50, 191, 231))
+        self.verticalLayout = QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.label_3 = QLabel(self.verticalLayoutWidget)
+        self.label_3.setObjectName(u"label_3")
+        self.label_3.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.label_3)
+
+        self.label = QLabel(self.verticalLayoutWidget)
+        self.label.setObjectName(u"label")
+        self.label.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.label)
+
+        self.progressBar = QProgressBar(self.verticalLayoutWidget)
+        self.progressBar.setObjectName(u"progressBar")
+        self.progressBar.setValue(24)
+
+        self.verticalLayout.addWidget(self.progressBar)
+
+        self.lineEdit = QLineEdit(self.verticalLayoutWidget)
+        self.lineEdit.setObjectName(u"lineEdit")
+        self.lineEdit.setReadOnly(True)
+
+        self.verticalLayout.addWidget(self.lineEdit)
+
+        self.label_2 = QLabel(self.verticalLayoutWidget)
+        self.label_2.setObjectName(u"label_2")
+        self.label_2.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.label_2)
+
+        self.progressBar_2 = QProgressBar(self.verticalLayoutWidget)
+        self.progressBar_2.setObjectName(u"progressBar_2")
+        self.progressBar_2.setValue(24)
+
+        self.verticalLayout.addWidget(self.progressBar_2)
+
+        self.lineEdit_2 = QLineEdit(self.verticalLayoutWidget)
+        self.lineEdit_2.setObjectName(u"lineEdit_2")
+        self.lineEdit_2.setReadOnly(True)
+
+        self.verticalLayout.addWidget(self.lineEdit_2)
+
+        self.verticalLayoutWidget_2 = QWidget(self.experimentProgressBox)
+        self.verticalLayoutWidget_2.setObjectName(u"verticalLayoutWidget_2")
+        self.verticalLayoutWidget_2.setGeometry(QRect(220, 50, 191, 231))
+        self.verticalLayout_2 = QVBoxLayout(self.verticalLayoutWidget_2)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.label_4 = QLabel(self.verticalLayoutWidget_2)
+        self.label_4.setObjectName(u"label_4")
+        self.label_4.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayout_2.addWidget(self.label_4)
+
+        self.label_5 = QLabel(self.verticalLayoutWidget_2)
+        self.label_5.setObjectName(u"label_5")
+        self.label_5.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayout_2.addWidget(self.label_5)
+
+        self.progressBar_3 = QProgressBar(self.verticalLayoutWidget_2)
+        self.progressBar_3.setObjectName(u"progressBar_3")
+        self.progressBar_3.setValue(24)
+
+        self.verticalLayout_2.addWidget(self.progressBar_3)
+
+        self.lineEdit_3 = QLineEdit(self.verticalLayoutWidget_2)
+        self.lineEdit_3.setObjectName(u"lineEdit_3")
+        self.lineEdit_3.setReadOnly(True)
+
+        self.verticalLayout_2.addWidget(self.lineEdit_3)
+
+        self.label_6 = QLabel(self.verticalLayoutWidget_2)
+        self.label_6.setObjectName(u"label_6")
+        self.label_6.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayout_2.addWidget(self.label_6)
+
+        self.progressBar_4 = QProgressBar(self.verticalLayoutWidget_2)
+        self.progressBar_4.setObjectName(u"progressBar_4")
+        self.progressBar_4.setValue(24)
+
+        self.verticalLayout_2.addWidget(self.progressBar_4)
+
+        self.lineEdit_4 = QLineEdit(self.verticalLayoutWidget_2)
+        self.lineEdit_4.setObjectName(u"lineEdit_4")
+        self.lineEdit_4.setReadOnly(True)
+
+        self.verticalLayout_2.addWidget(self.lineEdit_4)
+
+        self.verticalLayoutWidget_3 = QWidget(self.experimentProgressBox)
+        self.verticalLayoutWidget_3.setObjectName(u"verticalLayoutWidget_3")
+        self.verticalLayoutWidget_3.setGeometry(QRect(420, 50, 191, 231))
+        self.verticalLayout_3 = QVBoxLayout(self.verticalLayoutWidget_3)
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
+        self.label_7 = QLabel(self.verticalLayoutWidget_3)
+        self.label_7.setObjectName(u"label_7")
+        self.label_7.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayout_3.addWidget(self.label_7)
+
+        self.label_8 = QLabel(self.verticalLayoutWidget_3)
+        self.label_8.setObjectName(u"label_8")
+        self.label_8.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayout_3.addWidget(self.label_8)
+
+        self.progressBar_5 = QProgressBar(self.verticalLayoutWidget_3)
+        self.progressBar_5.setObjectName(u"progressBar_5")
+        self.progressBar_5.setValue(24)
+
+        self.verticalLayout_3.addWidget(self.progressBar_5)
+
+        self.lineEdit_5 = QLineEdit(self.verticalLayoutWidget_3)
+        self.lineEdit_5.setObjectName(u"lineEdit_5")
+        self.lineEdit_5.setReadOnly(True)
+
+        self.verticalLayout_3.addWidget(self.lineEdit_5)
+
+        self.label_9 = QLabel(self.verticalLayoutWidget_3)
+        self.label_9.setObjectName(u"label_9")
+        self.label_9.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayout_3.addWidget(self.label_9)
+
+        self.progressBar_6 = QProgressBar(self.verticalLayoutWidget_3)
+        self.progressBar_6.setObjectName(u"progressBar_6")
+        self.progressBar_6.setValue(24)
+
+        self.verticalLayout_3.addWidget(self.progressBar_6)
+
+        self.lineEdit_6 = QLineEdit(self.verticalLayoutWidget_3)
+        self.lineEdit_6.setObjectName(u"lineEdit_6")
+        self.lineEdit_6.setReadOnly(True)
+
+        self.verticalLayout_3.addWidget(self.lineEdit_6)
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -185,6 +333,16 @@ class Ui_MainWindow(object):
         self.deadAliveStatsButton.setText(QCoreApplication.translate("MainWindow", u"DeadAlive", None))
         self.fillRateButton.setText(QCoreApplication.translate("MainWindow", u"Fill Rate", None))
         self.resetButton.setText(QCoreApplication.translate("MainWindow", u"Reset", None))
+        self.experimentProgressBox.setTitle(QCoreApplication.translate("MainWindow", u"Experiment Progess", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"Acquisition", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"Positions", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Time points", None))
+        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Segmentation", None))
+        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Positions", None))
+        self.label_6.setText(QCoreApplication.translate("MainWindow", u"Time points", None))
+        self.label_7.setText(QCoreApplication.translate("MainWindow", u"Channel Properties", None))
+        self.label_8.setText(QCoreApplication.translate("MainWindow", u"Positions", None))
+        self.label_9.setText(QCoreApplication.translate("MainWindow", u"Time points", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuExit.setTitle(QCoreApplication.translate("MainWindow", u"Exit", None))
     # retranslateUi

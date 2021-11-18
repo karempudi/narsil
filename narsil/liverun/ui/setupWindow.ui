@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>623</width>
-    <height>720</height>
+    <width>548</width>
+    <height>739</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,10 +17,10 @@
    <widget class="QGroupBox" name="exptSetupBox">
     <property name="geometry">
      <rect>
-      <x>30</x>
+      <x>20</x>
       <y>10</y>
-      <width>541</width>
-      <height>231</height>
+      <width>501</width>
+      <height>271</height>
      </rect>
     </property>
     <property name="title">
@@ -30,7 +30,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>20</y>
+       <y>30</y>
        <width>431</width>
        <height>41</height>
       </rect>
@@ -70,7 +70,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>60</y>
+       <y>70</y>
        <width>431</width>
        <height>41</height>
       </rect>
@@ -118,7 +118,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>100</y>
+       <y>110</y>
        <width>431</width>
        <height>41</height>
       </rect>
@@ -144,7 +144,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>150</y>
+       <y>190</y>
        <width>431</width>
        <height>41</height>
       </rect>
@@ -170,7 +170,7 @@
      <property name="geometry">
       <rect>
        <x>240</x>
-       <y>200</y>
+       <y>240</y>
        <width>191</width>
        <height>23</height>
       </rect>
@@ -179,14 +179,62 @@
       <string>Validate Experiment Setup</string>
      </property>
     </widget>
+    <widget class="QWidget" name="horizontalLayoutWidget_9">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>150</y>
+       <width>431</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <layout class="QHBoxLayout" name="mmVersionLayout">
+      <item>
+       <widget class="QLabel" name="microManagerVersionLabel">
+        <property name="text">
+         <string>Micromanager Version</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="version1Button">
+        <property name="text">
+         <string>1.4</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="version2Button">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>2.0</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </widget>
    <widget class="QGroupBox" name="analysisSetupBox">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>240</y>
-      <width>541</width>
-      <height>301</height>
+      <x>20</x>
+      <y>290</y>
+      <width>511</width>
+      <height>331</height>
      </rect>
     </property>
     <property name="title">
@@ -196,7 +244,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>20</y>
+       <y>30</y>
        <width>431</width>
        <height>31</height>
       </rect>
@@ -229,7 +277,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>210</y>
+       <y>230</y>
        <width>431</width>
        <height>31</height>
       </rect>
@@ -248,7 +296,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>240</y>
+       <y>260</y>
        <width>431</width>
        <height>31</height>
       </rect>
@@ -273,8 +321,8 @@
     <widget class="QPushButton" name="validateAnalysisSetupButton">
      <property name="geometry">
       <rect>
-       <x>260</x>
-       <y>270</y>
+       <x>270</x>
+       <y>300</y>
        <width>161</width>
        <height>23</height>
       </rect>
@@ -287,9 +335,9 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>54</y>
+       <y>60</y>
        <width>479</width>
-       <height>157</height>
+       <height>161</height>
       </rect>
      </property>
      <layout class="QFormLayout" name="imageSegLayout">
@@ -361,8 +409,8 @@
    <widget class="QWidget" name="horizontalLayoutWidget_2">
     <property name="geometry">
      <rect>
-      <x>250</x>
-      <y>550</y>
+      <x>260</x>
+      <y>630</y>
       <width>221</width>
       <height>51</height>
      </rect>
@@ -391,7 +439,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>623</width>
+     <width>548</width>
      <height>22</height>
     </rect>
    </property>

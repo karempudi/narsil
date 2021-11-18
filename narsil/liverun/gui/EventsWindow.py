@@ -28,6 +28,9 @@ class EventsWindow(QMainWindow):
         self.usePositionsFile = None
         self.positionsFileName = None
 
+        # micromanager version
+        self.mmVersion = None
+
         # will set true if the positions are parsed correctly
         # These positions will by default be loaded into fast postions side
         self.parsedPositions = None
@@ -239,7 +242,7 @@ class EventsWindow(QMainWindow):
                 msg.exec()
             print("Sending positions to parser .... ")
             print(f"Positions from file: {self.usePositionsFile}")
-            self.positionsData = getPositionList(self.positionsFileName)
+            self.positionsData = getPositionList(filename=self.positionsFileName, version=self.mmVersion)
         
         elif self.usePositionsFile == False:
             print(f"Positions from file: {self.usePositionsFile}")
