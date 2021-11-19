@@ -75,13 +75,12 @@ class exptRun(object):
             'minPeaksDistance': 25,
             'barcodeWidth': 48,
             'minChannelLength':100,
-            'rowThreshold': 10000,
-            'channelRowLocations': [400, 1200],
-            'barcodeLength': 800,
             'smallObjectsArea': 64,
             'magnification': 40,
             'channelsPerBlock': 21,
-            'channelWidth': 36
+            'channelWidth': 36,
+            'plateauSize': 15,
+            
         }
 
         self.GPUParameters = {
@@ -213,11 +212,11 @@ class exptRun(object):
         #self.loadNets()
         #testDataDir = Path("C:\\Users\\Praneeth\\Documents\\Elflab\\Code\\testdata\\hetero40x")
         #testDataDir = Path("D:\\Jimmy\\EXP-21-BY1006\\therun")
-        testDataDir = Path("/home/pk/Documents/EXP-21-BY1006/therun")
-        #testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x")
+        #testDataDir = Path("/home/pk/Documents/EXP-21-BY1006/therun")
+        testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x")
         for event in self.acquireEvents:
             print(f"{event['axes']['position']} -- {event['axes']['time']}")
-            positionStr = "Pos1" + str(event['axes']['position'] + 1)
+            positionStr = "Pos10" + str(event['axes']['position'])
             imgName = imgFilenameFromNumber(int(event['axes']['time']))
             channelName = str(event['channel']['config'])
             imagePath = testDataDir / positionStr / channelName/ imgName
@@ -360,87 +359,63 @@ class exptRun(object):
 
  
         # pass through net and get the results
-        channelSegMask = torch.sigmoid(self.channelSegNet(image)) > self.channelProcessParameters['segThreshold']
+        # change of approach, we only find channels in the first image and use them for the rest of the
+        # images as it is possible to accumulate errors in wierd ways if you use channel locations from
+        # each image, especially in 40x on data of not the highest quality
+        if time == 0:
+            channelSegMask = torch.sigmoid(self.channelSegNet(image)) > self.channelProcessParameters['segThreshold']
 
-        # sent to cpu and saved according to position and timepoint
-        channelSegMaskCpu = channelSegMask.cpu().detach().numpy().squeeze(0).squeeze(0)
+            # sent to cpu and saved according to position and timepoint
+            channelSegMaskCpu = channelSegMask.cpu().detach().numpy().squeeze(0).squeeze(0)
 
-        # need to remove smaller objects of the artifacts
-        channelSegMaskCpu = remove_small_objects(channelSegMaskCpu.astype('bool'), min_size = self.channelProcessParameters['smallObjectsArea'])
+            # need to remove smaller objects of the artifacts
+            #channelSegMaskCpu = remove_small_objects(channelSegMaskCpu.astype('bool'), min_size = self.channelProcessParameters['smallObjectsArea'])
+            self.writeFile(channelSegMaskCpu, 'channelSegmentation', position, time)
 
-        self.writeFile(channelSegMaskCpu, 'channelSegmentation', position, time)
+            locationsBarcodes, locationsChannels = findBarcodesAndChannels(channelSegMaskCpu, 
+                                    self.channelProcessParameters)
 
-        # grab locations of barcode # will be used for checking with 100x images later
-        hist = np.sum(channelSegMaskCpu, axis = 0) > self.channelProcessParameters['minChannelLength']
-        peaks, _ = find_peaks(hist, distance = self.channelProcessParameters['minPeaksDistance'])
-        indices_with_larger_gaps = np.where(np.ediff1d(peaks) > self.channelProcessParameters['barcodeWidth'])[0]
 
-        # there are locaitons of the channel before and after the the gap
-        locations_before_barcode = peaks[indices_with_larger_gaps]
-        locations_after_barcode = peaks[indices_with_larger_gaps + 1]
-
-        # take the mean of the locations to get the center, convert to int (from uint) for the next steps
-        locations_barcode = np.rint(np.mean((locations_before_barcode,
-                         locations_after_barcode), axis=0)).astype('int')
-
-        sum_rows = np.sum(channelSegMaskCpu, axis = 1).astype('int')
-        row_locations = np.argwhere(np.diff(np.sign(sum_rows - self.channelProcessParameters['rowThreshold']))).flatten()
-
-        if len(row_locations) != 2:
-            row_x1 = self.channelProcessParameters['channelRowLocations'][0]
-            row_x2 = self.channelProcessParameters['channelRowLocations'][1]
-        else:
-            row_x1 = row_locations[0]
-            row_x2 = row_x1 + self.channelProcessParameters['barcodeLength']
-
-        # grab barcode and then grab the channels in each image and write
-        barcodeImages = []
-        phase_img = image.cpu().detach().numpy().squeeze(0).squeeze(0)
-        barcodeWidth = self.channelProcessParameters['barcodeWidth']
-        for location in locations_barcode:
-            barcode_img = phase_img[row_x1:row_x2, location - barcodeWidth//2: location + barcodeWidth//2]
-            barcodeImages.append(barcode_img)
-        # stack the barcode and write all at the same time
-        self.writeFile(barcodeImages, 'barcodes', position, time)
-        sys.stdout.write(f"No of barcode regions detected: {len(barcodeImages)}\n")
-        sys.stdout.flush()
-
-        # find the peaks and write the the channel crops to file system
-        # grab channels between barcodes and record the info in database
-        # TODO:
-        channelLocations = identifyChannels(peaks, locations_barcode,
-                             magnification=self.channelProcessParameters['magnification'],
-                             channelsPerBlock=self.channelProcessParameters['channelsPerBlock']) 
-
-        
-        if channelLocations != None:
-            sys.stdout.write(f"No of channels identified: {len(channelLocations)}\n")
+            # grab barcode and then grab the channels in each image and write
+            barcodeImages = []
+            phase_img = image.cpu().detach().numpy().squeeze(0).squeeze(0)
+            barcodeWidth = self.channelProcessParameters['barcodeWidth']
+            for location in locationsBarcodes:
+                barcode_img = phase_img[:, location - barcodeWidth//2: location + barcodeWidth//2]
+                barcodeImages.append(barcode_img)
+            # stack the barcode and write all at the same time
+            self.writeFile(barcodeImages, 'barcodes', position, time)
+            sys.stdout.write(f"No of barcode regions detected: {len(barcodeImages)}\n")
             sys.stdout.flush()
-
-            # start the cutting channels and then writing it to appropriate directory
-            # just send image and locations and let the write function cut the things out
-            #
-            self.writeFile(phase_img, 'oneMMChannelPhase', position, time,
-                             channelLocations = channelLocations,
-                             rowLocations = (row_x1, row_x2))
-        
-            numChannels = len(channelLocations)
-        else:
-            numChannels = 0
-
-        dataToDatabase = {
-            'time': time,
-            'position': position,
-            'locations': pickle.dumps(channelLocations),
-            'numchannels': numChannels
-        }
-
-        self.recordInDatabase('segment', dataToDatabase)
+#
+#           if channelLocations != None:
+#                sys.stdout.write(f"No of channels identified: {len(channelLocations)}\n")
+#                sys.stdout.flush()
+#
+#                # start the cutting channels and then writing it to appropriate directory
+#                # just send image and locations and let the write function cut the things out
+#                #
+#                self.writeFile(phase_img, 'oneMMChannelPhase', position, time,
+#                             channelLocations = channelLocations,
+#                             rowLocations = (row_x1, row_x2))
+#        
+#            numChannels = len(channelLocations)
+#        else:
+#            numChannels = 0
+#
+#        dataToDatabase = {
+#            'time': time,
+#            'position': position,
+#            'locations': pickle.dumps(channelLocations),
+#            'numchannels': numChannels
+#        }
+#
+#        self.recordInDatabase('segment', dataToDatabase)
 
         sys.stdout.write("\n ---------\n")
         sys.stdout.flush()
 
-        return channelLocations
+        return None
 
 
     def processCells(self, image, position, time, channelLocations):
@@ -570,78 +545,63 @@ def imgFilenameFromNumber(number):
     imgFilename = 'img_' + '0' * (9 - num_digits) + str(number) + '.tiff'
     return imgFilename
 
-def identifyChannels(peaks, locations_barcode, magnification=40, channelsPerBlock=21):
-    # peaks will be the indices of the peaks you get from the channel segmentation mask histogram
-    # The goal is to identify blocks of channels in them and mark the peaks that belong to the 
-    # channels that you want in your analysis
-
-    # You will have to write different cases for different magnifications ofcourse
-    channels = []
-    if magnification == 40:
-        num_barcodes = len(locations_barcode)
-        
-        # if there are 6 barcodes in the image, it means, you can 
-        # clearly see 5 blocks. go grab all of them
-        if num_barcodes == 6:
-            for i in range(1, num_barcodes):
-                indices = np.where(np.logical_and(peaks > locations_barcode[i-1],
-                                                peaks < locations_barcode[i]))[0]
-                channels.extend(list(peaks[indices]))
-        
-        # if there are only 5, it is possible there are 3-4 sitations
-        # and we grab the locaitons for each situation differently
-
-        elif num_barcodes == 5:
-            
-            # if one of these is channelsPerBlock, then we can grab it entirely
-            indices_before = np.where(peaks < locations_barcode[0])[0]
-            indices_after = np.where(peaks > locations_barcode[-1])[0]
-            
-            # grabbing peaks when a full block is before the first barcode
-            if len(indices_before) == channelsPerBlock:
-                for i in range(0, num_barcodes):
-                    if(i == 0):
-                        indices = np.where(peaks < locations_barcode[i])[0]
-                    else:
-                        indices = np.where(np.logical_and(peaks > locations_barcode[i-1],
-                                                        peaks < locations_barcode[i]))[0]
-                    channels.extend(list(peaks[indices]))
-
-            # grabbing peaks when a full block is after the last barcode
-            elif len(indices_after) == channelsPerBlock:
-
-                for i in range(0, num_barcodes):
-                    if(i == num_barcodes - 1):
-                        indices = np.where(peaks > locations_barcode[i])[0]
-                    else:
-                        indices = np.where(np.logical_and(peaks > locations_barcode[i],
-                                                        peaks < locations_barcode[i+1]))[0]
-                        
-                    channels.extend(list(peaks[indices]))
-            # if you don't have full block on either side of the first or last barcode
-            # you are in an unfortunate situation where you can only grab 4 block reliably
-            # ignore the channels on the side, they are unrelaible if there are drifts,
-            # which can happen in 40x 
-            else:
-                for i in range(0, num_barcodes - 1):
-                    indices = np.where(np.logical_and(peaks > locations_barcode[i],
-                                                    peaks < locations_barcode[i+1]))[0]
-                    
-                    channels.extend(list(peaks[indices]))
-
-        # here you have a block detection failure
-        else:
-            sys.stdout.write("Block detection failure ... :(\n")
-            sys.stdout.flush()
-
-    # TODO: 100x block detection code later.    
-    elif magnification == 100:
-        pass
+def findBarcodesAndChannels(image, parameters = { 'minChannelLength': 200, 'minPeaksDistance' : 25, 
+                    'barcodeWidth' : 48, 'channelsPerBlock': 21, 'plateauSize':15}):
     
-    if len(channels) == 0:
-        return None
+    hist = np.sum(image, axis = 0) > parameters['minChannelLength']
+
+    peaks, _ = find_peaks(hist, distance=parameters['minPeaksDistance'], plateau_size=parameters['plateauSize'])
+    
+    indices_with_larger_gaps = np.where(np.ediff1d(peaks) > parameters['barcodeWidth'])[0]
+    
+    locations_before_barcode = peaks[indices_with_larger_gaps]
+    locations_after_barcode = peaks[indices_with_larger_gaps + 1]
+    
+    locations_barcode = np.rint(np.mean((locations_before_barcode,
+                                        locations_after_barcode), axis = 0)).astype('int')
+    
+    num_barcodes = len(locations_barcode)
+    # there are 5 barcodes seen in the image
+    if num_barcodes == 5:
+        # count the number of channels before the first barcode and after the 
+        # last barcode and include them upto numChannels channels
+        y_channels = []
+        
+        # channels before first barcode
+        indices_before_first = np.where(peaks < locations_barcode[0])[0]
+        y_channels.extend(list(peaks[indices_before_first]))
+        
+        for i in range(num_barcodes):
+            indices = np.where(np.logical_and(peaks > locations_barcode[i-1],
+                                             peaks < locations_barcode[i]))[0]
+            y_channels.extend(list(peaks[indices]))
+            
+        # number of channels to count after the last
+        number_to_include = parameters['channelsPerBlock'] - len(indices_before_first)
+        indices_after_last = np.where(peaks > locations_barcode[-1])[0]
+        y_channels.extend(list(peaks[indices_after_last][:number_to_include]))
+        
+    elif num_barcodes == 6:
+        y_channels = []
+        # count only the channels between barcodes and 
+        # grab the (x, y) locations to cut,
+        # x will be the top of the channel, row number
+        # y will be the peak picked up in the histogram, between the barcodes
+        # count 21 channels after calculating
+        for i in range(num_barcodes):
+            indices = np.where(np.logical_and(peaks > locations_barcode[i-1],
+                                             peaks < locations_barcode[i]))[0]
+            #if len(indices) == 21:
+            # all good pick them up
+            y_channels.extend(list(peaks[indices]))   
+        
     else:
-        return channels
+        # detection failure, since it is ambiguous skipp the position
+        y_channels = []
+        sys.stdout.write(f"Detection failure, {num_barcodes} detected\n")
+        sys.stdout.flush()
+    # locations of the barcode and locations of channels to cut.
+    return locations_barcode, y_channels
 
 class tweezerWindow(QMainWindow):
 
