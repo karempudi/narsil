@@ -22,7 +22,6 @@ import sys
 import numpy as np
 import torch
 import random
-import cv2
 from datetime import datetime
 
 

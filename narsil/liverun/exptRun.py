@@ -1,3 +1,4 @@
+from scipy.ndimage.measurements import find_objects
 import torch.multiprocessing as mp
 import psycopg2 as pgdatabase
 import torch
@@ -195,11 +196,37 @@ class exptRun(object):
                             int(data['time']), data['locations'], data['numchannels'],))
 
         except pgdatabase.DatabaseError as e:
-            sys.stderr.write(f"Error in writing to database: {e}")
+            sys.stderr.write(f"Error in writing to database: {e}\n")
             sys.stderr.flush()
         finally:
             if con:
                 con.close()
+    
+    def getFromDatabase(self, tableName, position, time):
+        con = None
+        try:
+            con = pgdatabase.connect(database=self.dbParameters['dbname'],
+                                    user=self.dbParameters['dbuser'],
+                                    password=self.dbParameters['dbpassword'])
+            cur = con.cursor()
+            con.autocommit = True
+
+            if tableName == 'segment':
+                cur.exectue("SELECT locations FROM segment WHERE position=%s AND time=%s", (position, time))
+
+                # you get a pickled bytear that needs to be converted to numpy
+                rows = cur.fetchall()
+
+                channelLocations = pickle.loads(rows[0])
+
+                return channelLocations
+        except pgdatabase.DatabaseError as e:
+            sys.stderr.write(f"Error in getting channel locations for m database: {e}\n")
+            sys.stderr.flush()
+        finally:
+            if con:
+                con.close()
+
 
     def waitForPFS(self, event, bridge, event_queue):
         # wait for focus before acquisition 
@@ -262,7 +289,7 @@ class exptRun(object):
 
     # do all the writing to file system using this function,
     # abstract out the logic for different cases 
-    def writeFile(self, image, imageType, position, time, channelLocations=None, rowLocations=None):
+    def writeFile(self, image, imageType, position, time, channelLocations=None):
         # construct directories if they are not there
         mainAnalysisDir = Path(self.imageProcessParameters["saveDir"])
         if imageType == 'cellSegmentation':
@@ -299,7 +326,29 @@ class exptRun(object):
             sys.stdout.write(str(channelMaskFilename) + " written \n")
             sys.stdout.flush()
         elif imageType == 'oneMMChannelCellSeg':
-            pass
+            if channelLocations == None:
+                sys.stdout.write(f"Channel locations missing for Pos: {position} and time: {time}\n")
+                sys.stdout.flush()
+            else:
+                filename = str(time) + '.tiff'
+                positionDir = str(position)
+                channelWidth = self.channelProcessParameters['channelWidth'] //2
+                image = image * 255
+                for (i, location) in enumerate(channelLocations, 0):
+                    channelNo = str(i)
+                    channelDir = mainAnalysisDir / positionDir / imageType / channelNo
+                    if not channelDir.exists():
+                        channelDir.mkdir(parents=True, exist_ok=True)
+                    
+                    channelImg = image[:,
+                                        location - channelWidth: location + channelWidth]
+                    
+                    channelFileName = channelDir / filename
+                    io.imsave(channelFileName, channelImg, check_contrast=False, compress=6, plugin='tifffile')
+            
+            sys.stdout.write(f"{len(channelLocations)} from pos: {position} and time: {time} written\n")
+            sys.stdout.flush()
+            
         elif imageType == 'oneMMChannelPhase':
             # check if there are locations
             if channelLocations == None:
@@ -316,7 +365,7 @@ class exptRun(object):
                     if not channelDir.exists():
                         channelDir.mkdir(parents=True, exist_ok=True)
 
-                    channelImg = image[rowLocations[0]: rowLocations[1], 
+                    channelImg = image[:,
                                         location - channelWidth: location+ channelWidth]
                     # write the image
                     channelFileName = channelDir / filename
@@ -357,7 +406,8 @@ class exptRun(object):
 
         self.writeFile(cellSegMaskCpu, 'cellSegmentation', position, time)
 
- 
+        # get the phase image and use it to crop channels for viewing
+        phase_img = image.cpu().detach().numpy().squeeze(0).squeeze(0)
         # pass through net and get the results
         # change of approach, we only find channels in the first image and use them for the rest of the
         # images as it is possible to accumulate errors in wierd ways if you use channel locations from
@@ -378,7 +428,6 @@ class exptRun(object):
 
             # grab barcode and then grab the channels in each image and write
             barcodeImages = []
-            phase_img = image.cpu().detach().numpy().squeeze(0).squeeze(0)
             barcodeWidth = self.channelProcessParameters['barcodeWidth']
             for location in locationsBarcodes:
                 barcode_img = phase_img[:, location - barcodeWidth//2: location + barcodeWidth//2]
@@ -387,31 +436,52 @@ class exptRun(object):
             self.writeFile(barcodeImages, 'barcodes', position, time)
             sys.stdout.write(f"No of barcode regions detected: {len(barcodeImages)}\n")
             sys.stdout.flush()
-#
-#           if channelLocations != None:
-#                sys.stdout.write(f"No of channels identified: {len(channelLocations)}\n")
-#                sys.stdout.flush()
-#
-#                # start the cutting channels and then writing it to appropriate directory
-#                # just send image and locations and let the write function cut the things out
-#                #
-#                self.writeFile(phase_img, 'oneMMChannelPhase', position, time,
-#                             channelLocations = channelLocations,
-#                             rowLocations = (row_x1, row_x2))
-#        
-#            numChannels = len(channelLocations)
-#        else:
-#            numChannels = 0
-#
-#        dataToDatabase = {
-#            'time': time,
-#            'position': position,
-#            'locations': pickle.dumps(channelLocations),
-#            'numchannels': numChannels
-#        }
-#
-#        self.recordInDatabase('segment', dataToDatabase)
 
+            if len(locationsChannels) == 0:
+                sys.stdout.write(f"Skipping position: {position} data\n")
+                sys.stdout.flush()
+                
+                # record failed status to the database
+
+            else:
+                # write the channels appropraitely
+                sys.stdout.write(f"No of channels identified: {len(locationsChannels)}\n")
+                sys.stdout.flush()
+                
+                # write the phase and segmented mask chopped files
+                self.writeFile(phase_img, 'oneMMChannelPhase', position, time, channelLocations=locationsChannels)
+
+                self.writeFile(cellSegMaskCpu, 'oneMMChannelCellSeg', position, time, channelLocations=locationsChannels)
+
+            # write positions to database
+            dataToDatabase = {
+                'time': time,
+                'position': position,
+                'locations': pickle.dumps(locationsChannels),
+                'numChannels': len(locationsChannels)
+            }
+            self.recordInDatabase('segment', dataToDatabase)
+
+        else:
+            # what to do for the rest of the timepoint, use the positions from above
+            # get channel locations from the database
+            locationsChannels = self.getFromDatabase('segment', position, 0)
+
+            # write phase images
+            self.writeFile(phase_img, 'oneMMChannelPhase', position, time, channelLocations=locationsChannels)
+
+            # write cell segmentation images
+            self.writeFile(cellSegMaskCpu, 'oneChannelCellSeg', position, time, channelLocations=locationsChannels)
+            
+            dataToDatabase = {
+                'time': time, 
+                'position': position,
+                'locations': pickle.dumps(locationsChannels),
+                'numChannels': len(locationsChannels)
+            }
+
+            self.recordInDatabase('segment', dataToDatabase)
+            
         sys.stdout.write("\n ---------\n")
         sys.stdout.flush()
 
@@ -448,7 +518,7 @@ class exptRun(object):
                         if data == None:
                             time.sleep(2)
                             continue
-                        channelLocations = self.processChannels(image, int(data['position']), int(data['time']))
+                        self.processChannels(image, int(data['position']), int(data['time']))
                         del image
 
                         #sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
