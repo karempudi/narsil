@@ -23,6 +23,7 @@ from datetime import datetime
 from scipy.signal import find_peaks
 from skimage.morphology import remove_small_objects
 import numpy as np
+from skimage.measure import regionprops, label
 
 try:
     mp.set_start_method('spawn')
@@ -50,7 +51,7 @@ class exptRun(object):
 
         # queues and kill events
         self.segmentQueue = mp.Queue()
-        self.deadaliveQueue = mp.Queue()
+        self.growthQueue = mp.Queue()
 
         #self.acquireProcess = None
         #self.segmentProcess = None
@@ -58,13 +59,15 @@ class exptRun(object):
 
         self.acquireKillEvent = mp.Event()
         self.segmentKillEvent = mp.Event()
-        self.deadaliveKilEvent = mp.Event()
+        self.propertiesKilEvent = mp.Event()
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # datasets: These are wrappers around torch multiprocessing queues, that are used
         # to fetch data using iterable dataloader. Dataloader
         self.segmentDataset = queueDataset(self.segmentQueue) 
+
+        self.growthDataset = queueDataset(self.growthQueue)
 
 
         self.cellSegNet = None
@@ -402,7 +405,7 @@ class exptRun(object):
         cellSegMaskCpu = cellSegMask.cpu().detach().numpy().squeeze(0).squeeze(0)
 
         # remove smaller objects
-        cellSegMaskCpu = remove_small_objects(cellSegMaskCpu.astype('bool'), min_size=self.cellProcessParameters['smallObjectsArea'])
+        #cellSegMaskCpu = remove_small_objects(cellSegMaskCpu.astype('bool'), min_size=self.cellProcessParameters['smallObjectsArea'])
 
         self.writeFile(cellSegMaskCpu, 'cellSegmentation', position, time)
 
@@ -458,7 +461,7 @@ class exptRun(object):
                 'time': time,
                 'position': position,
                 'locations': pickle.dumps(locationsChannels),
-                'numChannels': len(locationsChannels)
+                'numchannels': len(locationsChannels)
             }
             self.recordInDatabase('segment', dataToDatabase)
 
@@ -477,7 +480,7 @@ class exptRun(object):
                 'time': time, 
                 'position': position,
                 'locations': pickle.dumps(locationsChannels),
-                'numChannels': len(locationsChannels)
+                'numchannels': len(locationsChannels)
             }
 
             self.recordInDatabase('segment', dataToDatabase)
@@ -485,7 +488,7 @@ class exptRun(object):
         sys.stdout.write("\n ---------\n")
         sys.stdout.flush()
 
-        return None
+        return locationsChannels
 
 
     def processCells(self, image, position, time, channelLocations):
@@ -516,10 +519,16 @@ class exptRun(object):
                         #image = data['image'].to(self.device)
                         image = data['image'].to(self.device)
                         if data == None:
-                            time.sleep(2)
+                            #time.sleep(2)
                             continue
-                        self.processChannels(image, int(data['position']), int(data['time']))
+                        channelLocations = self.processChannels(image, int(data['position']), int(data['time']))
+                        # put the datapoint in the queue for calculating the growth stuff like areas, lengths, etc
                         del image
+
+                        self.growthQueue.put({'position': int(data['position']), 
+                                              'time': int(data['time']),
+                                              'numChannels': len(channelLocations)
+                                              })
 
                         #sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
                         #sys.stdout.flush()
@@ -535,29 +544,32 @@ class exptRun(object):
         sys.stdout.write("Segmentation process completed successfully\n")
         sys.stdout.flush()
 
-    def processDeadAlive(self, data):
+    def calculateOnePosition(self, position, time, numChannels):
+        # calculate the properties of one position and write them to the database
+        
+        mainAnalysisDir = Path(self.imageProcessParameters["saveDir"])
+        # compute channel
+        for i in range(numChannels):
+            pass
 
-        # pass the data through the net
-        # and then write the hidden state to the database
-        pass
 
+        self.recordInDatabase('growth', properties)
 
-    def deadalive(self):
+    def properties(self):
         # dead-alive net loop for doing dead-alive analysis in single channel phase stacks
-        sys.stdout.write(f"Starting dead-alive analyzer ... \n")
+        sys.stdout.write(f"Starting properties analyzer ... \n")
         sys.stdout.flush()
 
         # wait for kill event
-        while not self.deadaliveKillEvent.is_set():
+        while not self.propertiesKillEvent.is_set():
             try:
                 time.sleep(2)
 
                 # write the dataloader to get the right stuff into the net
-                dataloader = DataLoader(self.deadAliveDataset, batch_size=20, num_workers=1)
+                dataloader = DataLoader(self.growthDataset, batch_size=1, num_workers=1)
                 with torch.no_grad():
                     for data in dataloader:
-                        data = data
-                        self.processDeadAlive(data,)
+                        calculateOnePosition(data['position'], data['time'], data['numChannels'])
                         
             except KeyboardInterrupt:
                 self.deadaliveKillEvent.set()
@@ -568,6 +580,7 @@ class exptRun(object):
         sys.stdout.write("Dead Alive process completed successfully\n")
         sys.stdout.flush()
 
+    # this function will be called for calculating the growth for a position
     def growth(self):
         pass
 
