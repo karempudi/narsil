@@ -131,6 +131,12 @@ class exptDatabase(object):
                             channelno INT, status BYTEA)
                             """)
                     sys.stdout.write(f"Table {table} is created ...\n")
+                elif table == 'growth':
+                    cur.execute("""CREATE TABLE growth
+                            (id SERIAL PRIMARY KEY, time TIMESTAMP, position INT, timepoint INT, 
+                            channelno INT, areas BYTEA, lengths BYTEA, numobjects INT)
+                            """)
+                    sys.stdout.write(f"Table {table} is created ...\n")
                 else:
                     sys.stdout.write(f"Table {table} has no schema, so not created ... \n")
                     sys.stdout.flush()
