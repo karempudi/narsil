@@ -206,6 +206,13 @@ class exptRun(object):
                             VALUES (%s, %s, %s, %s, %s)""", (datetime.now(), int(data['position']),
                             int(data['time']), data['locations'], data['numchannels'],))
 
+            elif tableName == 'growth':
+                for datapoint in data:
+                    cur.execute("""INSERT INTO growth (time, position, timepoint, channelno, areas, lengths, numobjects)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s)""", (datetime.now(), int(datapoint['position']),
+                                int(datapoint['timepoint']), datapoint['channelno'], datapoint['areas'],
+                                datapoint['lengths'], datapoint['numobjects'],))
+
         except pgdatabase.DatabaseError as e:
             sys.stderr.write(f"Error in writing to database: {e}\n")
             sys.stderr.flush()
@@ -250,9 +257,9 @@ class exptRun(object):
         #self.loadNets()
         #testDataDir = Path("C:\\Users\\Praneeth\\Documents\\Elflab\\Code\\testdata\\hetero40x")
         #testDataDir = Path("D:\\Jimmy\\EXP-21-BY1006\\therun")
-        testDataDir = Path("D:\\praneeth\\hetero40x")
+        #testDataDir = Path("D:\\praneeth\\hetero40x")
         #testDataDir = Path("/home/pk/Documents/EXP-21-BY1006/therun")
-        #testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x")
+        testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x")
         for event in self.acquireEvents:
             print(f"{event['axes']['position']} -- {event['axes']['time']}")
             positionStr = "Pos10" + str(event['axes']['position'])
@@ -725,6 +732,10 @@ class exptRun(object):
             # read the phase image cut and write
             phase_img = io.imread(phaseImageFilename)
             seg_img = io.imread(segImageFilename) * 255
+            seg_img = seg_img.astype('uint8')
+
+            # data for one image is bundled and added to the database at once
+            dataToDatabase = []
 
             channelWidth = self.channelProcessParameters['channelWidth'] // 2
             for (i, location) in enumerate(channelLocations, 0):
@@ -744,12 +755,32 @@ class exptRun(object):
                 # write the image
                 phaseChannelFileName = phaseChannelsDir / filename
                 segChannelFileName = segChannelsDir / filename
+
+                props = regionprops(label(segChannelImg))
+                areas = []
+                lengths = []
+                numobjects = []
+                for i in range(len(props)):
+                    if props[i]['area'] > 64 and props[i]['major_axis_length'] < 200:
+                        areas.append(props[i]['area'])
+                        lengths.append(props[i]['major_axis_length'])
+                        numobjects.append(i)
+
+                channelPropertiesToDatabase = {
+                    'position': position,
+                    'timepoint': time,
+                    'channelno': i, 
+                    'areas': pickle.dumps(areas),
+                    'lengths': pickle.dumps(lengths),
+                    'numobjects': pickle.dumps(numobjects)
+                } 
+                
                 io.imsave(phaseChannelFileName, phaseChannelImg.astype('float16'), check_contrast=False, compress = 6, plugin='tifffile')
                 io.imsave(segChannelFileName, segChannelImg.astype('uint8'), check_contrast=False, compress=6, plugin='tifffile')
-        # read the channel seg image, cut and write and do regionprops for database
 
-            # compute channel
-            #time.sleep(0.5)
+                dataToDatabase.append(channelPropertiesToDatabase)
+
+            self.recordInDatabase('growth', dataToDatabase)
 
             sys.stdout.write(f"Calculating for position: {datapoint[0]} -- time: {datapoint[1]} -- no of channels: {len(channelLocations)}\n")
             sys.stdout.flush()
@@ -769,7 +800,7 @@ class exptRun(object):
         while not self.writeKillEvent.is_set():
             try:
                 # write the dataloader to get the right stuff into the net
-                dataloader = DataLoader(self.writeDataset, batch_size=10, num_workers=2)
+                dataloader = DataLoader(self.writeDataset, batch_size=6, num_workers=2)
                 with torch.no_grad():
                     for data in dataloader:
                         #calculateOnePosition(data['position'], data['time'], data['numChannels'])
@@ -781,7 +812,7 @@ class exptRun(object):
                             times = list(data['time'].numpy())
                             numOfChannels = list(data['numchannels'].numpy())
                             arguments = list(zip(positions, times, numOfChannels))
-                        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
                             executor.map(self.calculateOnePosition, arguments)
 
                         # start a thread pool to speed up the execution of reading writing properties
@@ -826,16 +857,16 @@ def runProcesses(exptRunObject):
     except:
         pass
     exptRunObject.acquireKillEvent.clear()
-    acquireProcess = mp.Process(target=exptRunObject.acquire, name='Acquire Process')
+    acquireProcess = mp.Process(target=exptRunObject.acquireFake, name='Acquire Process')
     acquireProcess.start()
 
     exptRunObject.segmentKillEvent.clear()
     segmentProcess = mp.Process(target=exptRunObject.segment, name='Segment Process')
-    #segmentProcess.start()
+    segmentProcess.start()
 
     exptRunObject.writeKillEvent.clear()
     writeProcess = mp.Process(target=exptRunObject.properties, name='Propertis write Process')
-    #writeProcess.start()
+    writeProcess.start()
 
 # In the datasets image names are img_000000000.tiff format.
 def imgFilenameFromNumber(number):

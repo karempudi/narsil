@@ -134,7 +134,7 @@ class exptDatabase(object):
                 elif table == 'growth':
                     cur.execute("""CREATE TABLE growth
                             (id SERIAL PRIMARY KEY, time TIMESTAMP, position INT, timepoint INT, 
-                            channelno INT, areas BYTEA, lengths BYTEA, numobjects INT)
+                            channelno INT, areas BYTEA, lengths BYTEA, numobjects BYTEA)
                             """)
                     sys.stdout.write(f"Table {table} is created ...\n")
                 else:
