@@ -250,8 +250,9 @@ class exptRun(object):
         #self.loadNets()
         #testDataDir = Path("C:\\Users\\Praneeth\\Documents\\Elflab\\Code\\testdata\\hetero40x")
         #testDataDir = Path("D:\\Jimmy\\EXP-21-BY1006\\therun")
+        testDataDir = Path("D:\\praneeth\\hetero40x")
         #testDataDir = Path("/home/pk/Documents/EXP-21-BY1006/therun")
-        testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x")
+        #testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x")
         for event in self.acquireEvents:
             print(f"{event['axes']['position']} -- {event['axes']['time']}")
             positionStr = "Pos10" + str(event['axes']['position'])
@@ -768,7 +769,7 @@ class exptRun(object):
         while not self.writeKillEvent.is_set():
             try:
                 # write the dataloader to get the right stuff into the net
-                dataloader = DataLoader(self.writeDataset, batch_size=6, num_workers=2)
+                dataloader = DataLoader(self.writeDataset, batch_size=10, num_workers=2)
                 with torch.no_grad():
                     for data in dataloader:
                         #calculateOnePosition(data['position'], data['time'], data['numChannels'])
@@ -780,7 +781,7 @@ class exptRun(object):
                             times = list(data['time'].numpy())
                             numOfChannels = list(data['numchannels'].numpy())
                             arguments = list(zip(positions, times, numOfChannels))
-                        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
                             executor.map(self.calculateOnePosition, arguments)
 
                         # start a thread pool to speed up the execution of reading writing properties
