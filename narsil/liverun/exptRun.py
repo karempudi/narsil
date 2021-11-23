@@ -26,6 +26,7 @@ from skimage.morphology import remove_small_objects
 import numpy as np
 from skimage.measure import regionprops, label
 from skimage import img_as_ubyte
+import concurrent.futures
 
 try:
     mp.set_start_method('spawn')
@@ -64,7 +65,7 @@ class exptRun(object):
 
         self.acquireKillEvent = mp.Event()
         self.segmentKillEvent = mp.Event()
-        self.writeKilEvent = mp.Event()
+        self.writeKillEvent = mp.Event()
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -212,7 +213,7 @@ class exptRun(object):
             if con:
                 con.close()
     
-    def getFromDatabase(self, tableName, position, time):
+    def getLocationsFromDatabase(self, tableName, position, time):
         con = None
         try:
             con = pgdatabase.connect(database=self.dbParameters['dbname'],
@@ -611,9 +612,9 @@ class exptRun(object):
                 sys.stdout.flush()
                 
                 # write the phase and segmented mask chopped files
-                self.writeFileH5Py(phase_img, 'oneMMChannelPhase', position, time, channelLocations=locationsChannels)
+                #self.writeFileH5Py(phase_img, 'oneMMChannelPhase', position, time, channelLocations=locationsChannels)
 
-                self.writeFileH5Py(cellSegMaskCpu, 'oneMMChannelCellSeg', position, time, channelLocations=locationsChannels)
+                #self.writeFileH5Py(cellSegMaskCpu, 'oneMMChannelCellSeg', position, time, channelLocations=locationsChannels)
 
             # write positions to database
             dataToDatabase = {
@@ -627,13 +628,13 @@ class exptRun(object):
         else:
             # what to do for the rest of the timepoint, use the positions from above
             # get channel locations from the database
-            locationsChannels = self.getFromDatabase('segment', position, 0)
+            locationsChannels = self.getLocationsFromDatabase('segment', position, 0)
 
             # write phase images
-            self.writeFileH5Py(phase_img, 'oneMMChannelPhase', position, time, channelLocations=locationsChannels)
+            #self.writeFileH5Py(phase_img, 'oneMMChannelPhase', position, time, channelLocations=locationsChannels)
 
             # write cell segmentation images
-            self.writeFileH5Py(cellSegMaskCpu, 'oneMMChannelCellSeg', position, time, channelLocations=locationsChannels)
+            #self.writeFileH5Py(cellSegMaskCpu, 'oneMMChannelCellSeg', position, time, channelLocations=locationsChannels)
             
             dataToDatabase = {
                 'time': time, 
@@ -684,10 +685,11 @@ class exptRun(object):
                         # put the datapoint in the queue for calculating the growth stuff like areas, lengths, etc
                         del image
 
-                        self.writeQueue.put({'position': int(data['position']), 
-                                              'time': int(data['time']),
-                                              'numChannels': len(channelLocations)
-                                              })
+                        self.writeQueue.put({
+                            'position': int(data['position']), 
+                            'time': int(data['time']),
+                            'numchannels': len(channelLocations)
+                                    })
 
                         #sys.stdout.write(f"Image shape segmented: {image.shape}--{data['position']} -- {data['time']} \n")
                         #sys.stdout.flush()
@@ -703,16 +705,59 @@ class exptRun(object):
         sys.stdout.write("Segmentation process completed successfully\n")
         sys.stdout.flush()
 
-    def calculateOnePosition(self, position, time, numChannels):
+    def calculateOnePosition(self, datapoint):
         # calculate the properties of one position and write them to the database
-        
-        mainAnalysisDir = Path(self.imageProcessParameters["saveDir"])
-        # compute channel
-        for i in range(numChannels):
-            pass
+        try:
+            
+            mainAnalysisDir = Path(self.imageProcessParameters["saveDir"])
+            position = int(datapoint[0])
+            time = int(datapoint[1])
+
+            channelLocations = self.getLocationsFromDatabase('segment', int(datapoint[0]), 0)
+            # get channel locations from database
+            filename = str(time) + '.tiff'
+            positionDir = str(position)
+
+            phaseImageFilename = mainAnalysisDir / positionDir / "phaseFullImage" / filename
+            segImageFilename = mainAnalysisDir / positionDir / "cellSegmentation" / filename
+
+            # read the phase image cut and write
+            phase_img = io.imread(phaseImageFilename)
+            seg_img = io.imread(segImageFilename) * 255
+
+            channelWidth = self.channelProcessParameters['channelWidth'] // 2
+            for (i, location) in enumerate(channelLocations, 0):
+                channelNo = str(i)
+                phaseChannelsDir  = mainAnalysisDir / positionDir/ "oneMMChannelPhase" / channelNo
+                segChannelsDir = mainAnalysisDir / positionDir / "oneMMChannelCellSeg" / channelNo
+                if not phaseChannelsDir.exists():
+                    phaseChannelsDir.mkdir(parents=True, exist_ok=True)
+                
+                if not segChannelsDir.exists():
+                    segChannelsDir.mkdir(parents=True, exist_ok=True)
+
+                phaseChannelImg = phase_img[:,
+                                    location - channelWidth: location + channelWidth]
+                segChannelImg = seg_img[:,
+                                    location - channelWidth: location + channelWidth]
+                # write the image
+                phaseChannelFileName = phaseChannelsDir / filename
+                segChannelFileName = segChannelsDir / filename
+                io.imsave(phaseChannelFileName, phaseChannelImg.astype('float16'), check_contrast=False, compress = 6, plugin='tifffile')
+                io.imsave(segChannelFileName, segChannelImg.astype('uint8'), check_contrast=False, compress=6, plugin='tifffile')
+        # read the channel seg image, cut and write and do regionprops for database
+
+            # compute channel
+            #time.sleep(0.5)
+
+            sys.stdout.write(f"Calculating for position: {datapoint[0]} -- time: {datapoint[1]} -- no of channels: {len(channelLocations)}\n")
+            sys.stdout.flush()
+        except Exception as e:
+            sys.stdout.write(f"Error : {e} in writing files\n")
+            sys.stdout.flush()
 
 
-        self.recordInDatabase('growth', properties)
+        #self.recordInDatabase('growth', properties)
 
     def properties(self):
         # dead-alive net loop for doing dead-alive analysis in single channel phase stacks
@@ -720,23 +765,35 @@ class exptRun(object):
         sys.stdout.flush()
 
         # wait for kill event
-        while not self.propertiesKillEvent.is_set():
+        while not self.writeKillEvent.is_set():
             try:
-                time.sleep(2)
-
                 # write the dataloader to get the right stuff into the net
-                dataloader = DataLoader(self.growthDataset, batch_size=1, num_workers=1)
+                dataloader = DataLoader(self.writeDataset, batch_size=6, num_workers=2)
                 with torch.no_grad():
                     for data in dataloader:
-                        calculateOnePosition(data['position'], data['time'], data['numChannels'])
+                        #calculateOnePosition(data['position'], data['time'], data['numChannels'])
+                        if data is None:
+                            continue
+                        else:
+                            # arguments construction for pool execution
+                            positions = list(data['position'].numpy())
+                            times = list(data['time'].numpy())
+                            numOfChannels = list(data['numchannels'].numpy())
+                            arguments = list(zip(positions, times, numOfChannels))
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+                            executor.map(self.calculateOnePosition, arguments)
+
+                        # start a thread pool to speed up the execution of reading writing properties
+                        sys.stdout.write(f" Write Process: {data}\n")
+                        sys.stdout.flush()
                         
             except KeyboardInterrupt:
-                self.deadaliveKillEvent.set()
-                sys.stdout.write("Dead alive process interrupted using keyboard\n")
+                self.writeKillEvent.set()
+                sys.stdout.write("Writing process interrupted using keyboard\n")
                 sys.stdout.flush()
 
         
-        sys.stdout.write("Dead Alive process completed successfully\n")
+        sys.stdout.write("Writing properties process completed successfully\n")
         sys.stdout.flush()
 
     # this function will be called for calculating the growth for a position
@@ -756,6 +813,7 @@ class exptRun(object):
     def stop(self):
         self.acquireKillEvent.set()
         self.segmentKillEvent.set()
+        self.writeKillEvent.set()
     # if it fails write the state and bail, and use this state to restart after adjusting 
     def savedState(self):
         pass
@@ -774,9 +832,9 @@ def runProcesses(exptRunObject):
     segmentProcess = mp.Process(target=exptRunObject.segment, name='Segment Process')
     segmentProcess.start()
 
-    #exptRunObject.deadaliveKillEvent.clear()
-    #deadAliveProcess = tmp.Process(target=exptRunObject.deadalive, name='DeadAlive Process')
-    #deadAliveProcess.start()
+    exptRunObject.writeKillEvent.clear()
+    writeProcess = mp.Process(target=exptRunObject.properties, name='Propertis write Process')
+    writeProcess.start()
 
 # In the datasets image names are img_000000000.tiff format.
 def imgFilenameFromNumber(number):
