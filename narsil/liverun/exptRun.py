@@ -826,16 +826,16 @@ def runProcesses(exptRunObject):
     except:
         pass
     exptRunObject.acquireKillEvent.clear()
-    acquireProcess = mp.Process(target=exptRunObject.acquireFake, name='Acquire Process')
+    acquireProcess = mp.Process(target=exptRunObject.acquire, name='Acquire Process')
     acquireProcess.start()
 
     exptRunObject.segmentKillEvent.clear()
     segmentProcess = mp.Process(target=exptRunObject.segment, name='Segment Process')
-    segmentProcess.start()
+    #segmentProcess.start()
 
     exptRunObject.writeKillEvent.clear()
     writeProcess = mp.Process(target=exptRunObject.properties, name='Propertis write Process')
-    writeProcess.start()
+    #writeProcess.start()
 
 # In the datasets image names are img_000000000.tiff format.
 def imgFilenameFromNumber(number):

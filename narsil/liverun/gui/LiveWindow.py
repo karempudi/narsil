@@ -51,6 +51,7 @@ class LiveImageFetch(QThread):
             sys.stdout.write(f"Live image grabbing failed\n")
             sys.stdout.flush()
             self.data = None
+            self.dataFetched.emit()
 
         self.dataFetched.emit()
 
@@ -164,7 +165,7 @@ class LiveWindow(QMainWindow):
         sys.stdout.write(f"Nets loaded on device\n")
         sys.stdout.flush()
 
-        self.timer.timeout.connect(self.grabImageFake)
+        self.timer.timeout.connect(self.grabImage)
         self.timer.start()
 
     def grabImageFake(self):
@@ -248,16 +249,17 @@ class LiveWindow(QMainWindow):
     def updateImage(self):
         sys.stdout.write("Image acquired\n")
         sys.stdout.flush()
-        imgTensor = torch.from_numpy(self.imgAcquireThread.data.astype('float32')).unsqueeze(0).unsqueeze(0)
-        if self.segChannels:
-            with torch.no_grad():
-                out = torch.sigmoid(self.channelSegNet(imgTensor)) > 0.9
-                out_cpu = out.detach().numpy().squeeze(0).squeeze(0)
-                sys.stdout.write(f"Output shape: {out_cpu.shape}")
-                sys.stdout.flush()
-        self.ui.liveImageGraphics.setImage(self.imgAcquireThread.data.T, autoLevels=True, autoRange=False)
-        sys.stdout.write(f"Image plotted : {self.imgAcquireThread.data.shape}\n")
-        sys.stdout.flush()
+        if self.imgAcquireThread.data is not None:
+            imgTensor = torch.from_numpy(self.imgAcquireThread.data.astype('float32')).unsqueeze(0).unsqueeze(0)
+            if self.segChannels:
+                with torch.no_grad():
+                    out = torch.sigmoid(self.channelSegNet(imgTensor)) > 0.9
+                    out_cpu = out.detach().numpy().squeeze(0).squeeze(0)
+                    sys.stdout.write(f"Output shape: {out_cpu.shape}")
+                    sys.stdout.flush()
+            self.ui.liveImageGraphics.setImage(self.imgAcquireThread.data.T, autoLevels=True, autoRange=False)
+            sys.stdout.write(f"Image plotted : {self.imgAcquireThread.data.shape}\n")
+            sys.stdout.flush()
 
 def processImage(image):
 
