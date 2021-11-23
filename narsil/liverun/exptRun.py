@@ -8,6 +8,7 @@ import sys
 import time
 import math
 import pickle
+import h5py
 from pathlib import Path
 from functools import partial
 from torchvision import transforms, utils
@@ -24,6 +25,7 @@ from scipy.signal import find_peaks
 from skimage.morphology import remove_small_objects
 import numpy as np
 from skimage.measure import regionprops, label
+from skimage import img_as_ubyte
 
 try:
     mp.set_start_method('spawn')
@@ -51,7 +53,10 @@ class exptRun(object):
 
         # queues and kill events
         self.segmentQueue = mp.Queue()
-        self.growthQueue = mp.Queue()
+
+        # write queue will grab the position and write properties and run a thread pool to parallelize 
+        # the calculations as writing is the slowest part of the system
+        self.writeQueue = mp.Queue()
 
         #self.acquireProcess = None
         #self.segmentProcess = None
@@ -59,7 +64,7 @@ class exptRun(object):
 
         self.acquireKillEvent = mp.Event()
         self.segmentKillEvent = mp.Event()
-        self.propertiesKilEvent = mp.Event()
+        self.writeKilEvent = mp.Event()
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -67,11 +72,13 @@ class exptRun(object):
         # to fetch data using iterable dataloader. Dataloader
         self.segmentDataset = queueDataset(self.segmentQueue) 
 
-        self.growthDataset = queueDataset(self.growthQueue)
+        self.writeDataset = queueDataset(self.writeQueue)
 
 
         self.cellSegNet = None
         self.channelSegNet = None
+
+        self.maxTimepoints = 50
 
 
         self.channelProcessParameters = {
@@ -215,12 +222,12 @@ class exptRun(object):
             con.autocommit = True
 
             if tableName == 'segment':
-                cur.exectue("SELECT locations FROM segment WHERE position=%s AND time=%s", (position, time))
+                cur.execute("SELECT locations FROM segment WHERE position=%s AND timepoint=%s", (position, time))
 
                 # you get a pickled bytear that needs to be converted to numpy
                 rows = cur.fetchall()
 
-                channelLocations = pickle.loads(rows[0])
+                channelLocations = pickle.loads(rows[0][0])
 
                 return channelLocations
         except pgdatabase.DatabaseError as e:
@@ -261,7 +268,7 @@ class exptRun(object):
             print(imagePath)
             print("--------")
 
-            time.sleep(0.5)
+            time.sleep(0.3)
 
         while not self.acquireKillEvent.is_set():
             try:
@@ -305,14 +312,24 @@ class exptRun(object):
 
             cellMaskFilename = cellMaskDir / filename
 
-            sys.stdout.write(f"{cellMaskFilename} written \n")
-            sys.stdout.flush()
-
             image  = image * 255
             io.imsave(cellMaskFilename, image.astype('uint8'), compress=6, check_contrast=False,
                         plugin='tifffile')
             sys.stdout.write(str(cellMaskFilename) + " written \n")
             sys.stdout.flush()
+        elif imageType == 'phaseFullImage':
+            filename = str(time) + '.tiff'
+            positionDir = str(position)
+            phaseDir = mainAnalysisDir / positionDir/ imageType
+            if not phaseDir.exists():
+                phaseDir.mkdir(parents=True, exist_ok=True)
+            
+            phaseFilename = phaseDir/ filename
+
+            sys.stdout.write(f"{phaseFilename} written\n")
+            sys.stdout.flush()
+
+            io.imsave(phaseFilename, image.astype('float16'), plugin='tifffile')
             
         elif imageType == 'channelSegmentation':
             # construct filename
@@ -347,7 +364,7 @@ class exptRun(object):
                                         location - channelWidth: location + channelWidth]
                     
                     channelFileName = channelDir / filename
-                    io.imsave(channelFileName, channelImg, check_contrast=False, compress=6, plugin='tifffile')
+                    io.imsave(channelFileName, channelImg.astype('uint8'), check_contrast=False, compress=6, plugin='tifffile')
             
             sys.stdout.write(f"{len(channelLocations)} from pos: {position} and time: {time} written\n")
             sys.stdout.flush()
@@ -391,6 +408,140 @@ class exptRun(object):
             sys.stdout.write(f"{len(image)} barcodes written to disk \n")
             sys.stdout.flush()
 
+    def writeFileH5Py(self, image, imageType, position, time, channelLocations=None):
+        mainAnalysisDir = Path(self.imageProcessParameters["saveDir"])
+
+        if imageType == 'cellSegmentation':
+            filename = str(time) + '.tiff'
+            positionDir = str(position)
+
+            cellMaskDir = mainAnalysisDir / positionDir / imageType
+            if not cellMaskDir.exists():
+                cellMaskDir.mkdir(parents=True, exist_ok=True)
+
+            cellMaskFilename = cellMaskDir / filename
+
+            image = image * 255
+            io.imsave(cellMaskFilename, image.astype('uint8'), compress=6, check_contrast=False,
+                        plugin='tifffile')
+            sys.stdout.write(f"{cellMaskFilename} written\n")
+            sys.stdout.flush()
+
+        elif imageType == 'phaseFullImage':
+            filename = str(time) + '.tiff'
+            positionDir = str(position)
+            phaseDir = mainAnalysisDir / positionDir/ imageType
+            if not phaseDir.exists():
+                phaseDir.mkdir(parents=True, exist_ok=True)
+            
+            phaseFilename = phaseDir/ filename
+
+            sys.stdout.write(f"{phaseFilename} written\n")
+            sys.stdout.flush()
+
+            io.imsave(phaseFilename, image.astype('float16'), plugin='tifffile')
+       
+        elif imageType == 'channelSegmentation':
+            filename = str(time) + '.tiff'
+            positionDir = str(position)
+
+            channelMaskDir = mainAnalysisDir / positionDir / imageType
+            if not channelMaskDir.exists():
+                channelMaskDir.mkdir(parents=True, exist_ok=True)
+
+            channelMaskFilename = channelMaskDir / filename
+
+            image = image * 255
+            io.imsave(channelMaskFilename, image.astype('uint8'), compress=6, check_contrast=False,
+                        plugin='tifffile')
+            sys.stdout.write(f"{channelMaskFilename} written\n")
+            sys.stdout.flush()
+
+        elif imageType == 'oneMMChannelCellSeg':
+            if channelLocations == None:
+                sys.stdout.write(f"Channel locations missing for Pos: {position} and time: {time}\n")
+                sys.stdout.flush()
+
+            else:
+                positionDir = str(position)
+                writeDir = mainAnalysisDir / positionDir/ imageType
+                if not writeDir.exists():
+                    writeDir.mkdir(parents=True, exist_ok=True)
+
+                height, width = image.shape
+                channelWidth = self.channelProcessParameters['channelWidth'] // 2
+                if time == 0:
+                    # create on hdf5 stack for each of the channel locations
+                    for i, location in enumerate(channelLocations, 0):
+                        filename = str(i) + '.hdf5'
+                        with h5py.File(writeDir / filename, 'a') as f:
+                            f.create_dataset("stack", 
+                                (self.maxTimepoints, height, self.channelProcessParameters['channelWidth']),
+                                dtype='float16', compression='gzip')
+                            f['stack'][time] = image[:, 
+                                        location - channelWidth : location + channelWidth]
+                else:
+                    # open and write 
+                    for i, location in enumerate(channelLocations, 0):
+                        filename = str(i) + '.hdf5'
+                        with h5py.File(writeDir/filename, 'a') as f:
+                            f['stack'][time] = image[:,
+                                        location - channelWidth : location + channelWidth]
+                
+                sys.stdout.write(f"{len(channelLocations)} from position: {position} and time: {time} written\n")
+                sys.stdout.flush()
+
+        elif imageType == 'oneMMChannelPhase':
+            if channelLocations == None:
+                sys.stdout.write(f"Channel locations missing for Pos: {position} and time: {time}\n")
+                sys.stdout.flush()
+
+            else:
+                positionDir = str(position)
+                writeDir = mainAnalysisDir / positionDir/ imageType
+                if not writeDir.exists():
+                    writeDir.mkdir(parents=True, exist_ok=True)
+
+                height, width = image.shape
+                channelWidth = self.channelProcessParameters['channelWidth'] // 2
+                if time == 0:
+                    # create on hdf5 stack for each of the channel locations
+                    for i, location in enumerate(channelLocations, 0):
+                        filename = str(i) + '.hdf5'
+                        sys.stdout.write(f"{writeDir/filename} --- {location} -- {channelWidth}\n")
+                        sys.stdout.flush()
+                        with h5py.File(writeDir / filename, 'a') as f:
+                            f.create_dataset("stack", 
+                                (self.maxTimepoints, height, self.channelProcessParameters['channelWidth']),
+                                dtype='float16', compression='gzip')
+                            f['stack'][time] = image[:, 
+                                        location - channelWidth : location + channelWidth]
+                else:
+                    # open and write 
+                    for i, location in enumerate(channelLocations, 0):
+                        filename = str(i) + '.hdf5'
+                        with h5py.File(writeDir/filename, 'a') as f:
+                            f['stack'][time] = image[:,
+                                        location - channelWidth : location + channelWidth]
+                
+                sys.stdout.write(f"{len(channelLocations)} from position: {position} and time: {time} written\n")
+                sys.stdout.flush()
+        elif imageType == 'barcodes':
+            positionDir = str(position)
+            barcodesDir = mainAnalysisDir / positionDir/ imageType
+
+            if not barcodesDir.exists():
+                barcodesDir.mkdir(parents=True, exist_ok=True)
+
+            for i, oneBarcode in enumerate(image, 0):
+                filename = str(time) + "_" + str(i) + '.tiff'
+                oneBarcodeFilename = barcodesDir / filename
+                io.imsave(oneBarcodeFilename, oneBarcode, check_contrast=False, compress=6, plugin='tifffile')
+            
+            sys.stdout.write(f"{len(image)} barcodes written to disk\n")
+            sys.stdout.flush()
+
+
     # return the number of channels detected, locations to write to database 
     # assume it is one image per batch
     # TODO: batching of images done later
@@ -407,10 +558,13 @@ class exptRun(object):
         # remove smaller objects
         #cellSegMaskCpu = remove_small_objects(cellSegMaskCpu.astype('bool'), min_size=self.cellProcessParameters['smallObjectsArea'])
 
-        self.writeFile(cellSegMaskCpu, 'cellSegmentation', position, time)
+        self.writeFileH5Py(cellSegMaskCpu, 'cellSegmentation', position, time)
 
         # get the phase image and use it to crop channels for viewing
         phase_img = image.cpu().detach().numpy().squeeze(0).squeeze(0)
+
+
+        self.writeFileH5Py(phase_img, 'phaseFullImage', position, time)
         # pass through net and get the results
         # change of approach, we only find channels in the first image and use them for the rest of the
         # images as it is possible to accumulate errors in wierd ways if you use channel locations from
@@ -423,9 +577,14 @@ class exptRun(object):
 
             # need to remove smaller objects of the artifacts
             #channelSegMaskCpu = remove_small_objects(channelSegMaskCpu.astype('bool'), min_size = self.channelProcessParameters['smallObjectsArea'])
-            self.writeFile(channelSegMaskCpu, 'channelSegmentation', position, time)
+            self.writeFileH5Py(channelSegMaskCpu, 'channelSegmentation', position, time)
+            
+            hist = np.sum(channelSegMaskCpu, axis = 0) > self.channelProcessParameters['minChannelLength']
 
-            locationsBarcodes, locationsChannels = findBarcodesAndChannels(channelSegMaskCpu, 
+            peaks, _ = find_peaks(hist, distance=self.channelProcessParameters['minPeaksDistance'], 
+                            plateau_size=self.channelProcessParameters['plateauSize'])
+        
+            locationsBarcodes, locationsChannels = findBarcodesAndChannels(peaks, 
                                     self.channelProcessParameters)
 
 
@@ -436,7 +595,7 @@ class exptRun(object):
                 barcode_img = phase_img[:, location - barcodeWidth//2: location + barcodeWidth//2]
                 barcodeImages.append(barcode_img)
             # stack the barcode and write all at the same time
-            self.writeFile(barcodeImages, 'barcodes', position, time)
+            self.writeFileH5Py(barcodeImages, 'barcodes', position, time)
             sys.stdout.write(f"No of barcode regions detected: {len(barcodeImages)}\n")
             sys.stdout.flush()
 
@@ -452,9 +611,9 @@ class exptRun(object):
                 sys.stdout.flush()
                 
                 # write the phase and segmented mask chopped files
-                self.writeFile(phase_img, 'oneMMChannelPhase', position, time, channelLocations=locationsChannels)
+                self.writeFileH5Py(phase_img, 'oneMMChannelPhase', position, time, channelLocations=locationsChannels)
 
-                self.writeFile(cellSegMaskCpu, 'oneMMChannelCellSeg', position, time, channelLocations=locationsChannels)
+                self.writeFileH5Py(cellSegMaskCpu, 'oneMMChannelCellSeg', position, time, channelLocations=locationsChannels)
 
             # write positions to database
             dataToDatabase = {
@@ -471,10 +630,10 @@ class exptRun(object):
             locationsChannels = self.getFromDatabase('segment', position, 0)
 
             # write phase images
-            self.writeFile(phase_img, 'oneMMChannelPhase', position, time, channelLocations=locationsChannels)
+            self.writeFileH5Py(phase_img, 'oneMMChannelPhase', position, time, channelLocations=locationsChannels)
 
             # write cell segmentation images
-            self.writeFile(cellSegMaskCpu, 'oneChannelCellSeg', position, time, channelLocations=locationsChannels)
+            self.writeFileH5Py(cellSegMaskCpu, 'oneMMChannelCellSeg', position, time, channelLocations=locationsChannels)
             
             dataToDatabase = {
                 'time': time, 
@@ -525,7 +684,7 @@ class exptRun(object):
                         # put the datapoint in the queue for calculating the growth stuff like areas, lengths, etc
                         del image
 
-                        self.growthQueue.put({'position': int(data['position']), 
+                        self.writeQueue.put({'position': int(data['position']), 
                                               'time': int(data['time']),
                                               'numChannels': len(channelLocations)
                                               })
@@ -628,12 +787,12 @@ def imgFilenameFromNumber(number):
     imgFilename = 'img_' + '0' * (9 - num_digits) + str(number) + '.tiff'
     return imgFilename
 
-def findBarcodesAndChannels(image, parameters = { 'minChannelLength': 200, 'minPeaksDistance' : 25, 
-                    'barcodeWidth' : 48, 'channelsPerBlock': 21, 'plateauSize':15}):
+def findBarcodesAndChannels(peaks, parameters = { 'minChannelLength': 200, 'minPeaksDistance' : 25, 
+                    'barcodeWidth' : 48, 'channelsPerBlock': 21, 'plateauSize':15, 'channelWidth': 36}):
     
-    hist = np.sum(image, axis = 0) > parameters['minChannelLength']
+    #hist = np.sum(image, axis = 0) > parameters['minChannelLength']
 
-    peaks, _ = find_peaks(hist, distance=parameters['minPeaksDistance'], plateau_size=parameters['plateauSize'])
+    #peaks, _ = find_peaks(hist, distance=parameters['minPeaksDistance'], plateau_size=parameters['plateauSize'])
     
     indices_with_larger_gaps = np.where(np.ediff1d(peaks) > parameters['barcodeWidth'])[0]
     
@@ -652,6 +811,9 @@ def findBarcodesAndChannels(image, parameters = { 'minChannelLength': 200, 'minP
         
         # channels before first barcode
         indices_before_first = np.where(peaks < locations_barcode[0])[0]
+        if peaks[indices_before_first[0]] < parameters['channelWidth']//2:
+            indices_before_first = indices_before_first[1:]
+
         y_channels.extend(list(peaks[indices_before_first]))
         
         for i in range(num_barcodes):
