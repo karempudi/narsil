@@ -35,6 +35,7 @@ class ViewerWindow(QMainWindow):
 
         # thread object that will fetch 
         self.imageFetchThread = None
+        self.imgThreadRunning = False
 
         self.currentPosition = None
         self.positionNoValidator = QIntValidator(0, 10000, self.ui.positionNoLine)
@@ -48,6 +49,7 @@ class ViewerWindow(QMainWindow):
 
         self.show20Images = True
         self.showAllImages = False
+        self.showProperties = False
 
 
         self.ui.activePositionsList.setSortingEnabled(True)
@@ -143,6 +145,9 @@ class ViewerWindow(QMainWindow):
         # select which position list to display
         self.ui.viewActiveListCheck.toggled.connect(self.setViewActivePositions)
 
+        # select if you want to get properties and plot at the same time you get images
+        self.ui.plotPropertiesCheck.toggled.connect(self.setPlotPropertiesOption)
+
         # move position and channel item to possible tweeze positions list
         self.ui.toTweezeListButton.clicked.connect(self.sendPositionToTweezeList)
 
@@ -194,6 +199,12 @@ class ViewerWindow(QMainWindow):
     def setExptRunning(self, buttonState):
         self.exptRunning = buttonState
         sys.stdout.write(f"Expt is running : {self.exptRunning}\n")
+        sys.stdout.flush()
+
+    def setPlotPropertiesOption(self, buttonState):
+        self.showProperties = buttonState
+        self.showCurrentPosition()
+        sys.stdout.write(f"Plotting properies : {self.showProperties} from now on \n")
         sys.stdout.flush()
 
     def setViewActivePositions(self, buttonState):
@@ -347,10 +358,38 @@ class ViewerWindow(QMainWindow):
     def updateImage(self):
         sys.stdout.write("Image received\n")
         sys.stdout.flush()
-        self.ui.imagePlot.setImage(self.imageFetchThread.data, autoLevels=True)
+        self.ui.imagePlot.setImage(self.imageFetchThread.getData(), autoLevels=True, autoRange=False)
         sys.stdout.write("Image plotted\n")
         sys.stdout.flush()
+        self.imageFetchThread.quit()
+        self.imageFetchThread.wait()
         self.imageFetchThread = None
+
+class propertiesFetchThread(QThread):
+
+    dataFetched = Signal()
+
+    def __init__(self, fetch_data):
+        super(propertiesFetchThread, self).__init__()
+        self.fetch_data = fetch_data
+        self.data = None
+
+    def run(self):
+
+        try:
+            # connect to database and get stuff to plot the areas, lengths
+            con = None
+        
+        except:
+            pass
+
+        finally:
+            con = None
+
+        return None
+
+    def getData(self):
+        return self.data
 
 class ImageFetchThread(QThread):
 
@@ -363,7 +402,8 @@ class ImageFetchThread(QThread):
 
     def run(self):
         # run code and fetch stuff
-        sys.stdout.write(f"Fetch image thread to get position: {self.fetch_data['positionNo']} and channelNo: {self.fetch_data['channelNo']} \n")
+        sys.stdout.write(f"Image thread to get position: {self.fetch_data['positionNo']} and channelNo: {self.fetch_data['channelNo']} \n")
+        sys.stdout.write(f"{self.fetch_data['dir']}\n")
         sys.stdout.flush()
         try:
             # fetch all the images that are there in the directory
@@ -403,7 +443,9 @@ class ImageFetchThread(QThread):
             self.data = np.random.normal(loc=0.0, scale=1.0, size=(100, 100))
 
         #self.data = np.random.normal(loc=0.0, scale=1.0, size=(100, 100))
+
         self.dataFetched.emit()
+
 
     def getData(self):
         return self.data

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1566</width>
+    <width>1577</width>
     <height>736</height>
    </rect>
   </property>
@@ -393,13 +393,26 @@
      </item>
     </layout>
    </widget>
+   <widget class="QCheckBox" name="plotPropertiesCheck">
+    <property name="geometry">
+     <rect>
+      <x>1090</x>
+      <y>580</y>
+      <width>121</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Plot Properties</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1566</width>
+     <width>1577</width>
      <height>22</height>
     </rect>
    </property>

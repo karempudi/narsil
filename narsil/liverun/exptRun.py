@@ -738,7 +738,7 @@ class exptRun(object):
 
             # read the phase image cut and write
             phase_img = io.imread(phaseImageFilename)
-            seg_img = io.imread(segImageFilename) * 255
+            seg_img = io.imread(segImageFilename)
             seg_img = seg_img.astype('uint8')
 
             # data for one image is bundled and added to the database at once

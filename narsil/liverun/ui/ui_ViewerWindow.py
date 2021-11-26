@@ -27,7 +27,7 @@ class Ui_ViewerWindow(object):
     def setupUi(self, ViewerWindow):
         if not ViewerWindow.objectName():
             ViewerWindow.setObjectName(u"ViewerWindow")
-        ViewerWindow.resize(1566, 736)
+        ViewerWindow.resize(1577, 736)
         self.centralwidget = QWidget(ViewerWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.removeButton = QPushButton(self.centralwidget)
@@ -208,10 +208,13 @@ class Ui_ViewerWindow(object):
 
         self.horizontalLayout_4.addWidget(self.getAllImagesRadio)
 
+        self.plotPropertiesCheck = QCheckBox(self.centralwidget)
+        self.plotPropertiesCheck.setObjectName(u"plotPropertiesCheck")
+        self.plotPropertiesCheck.setGeometry(QRect(1090, 580, 121, 23))
         ViewerWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(ViewerWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1566, 22))
+        self.menubar.setGeometry(QRect(0, 0, 1577, 22))
         ViewerWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(ViewerWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -248,5 +251,6 @@ class Ui_ViewerWindow(object):
         self.viewActiveListCheck.setText(QCoreApplication.translate("ViewerWindow", u"Active? ", None))
         self.getOnly20Radio.setText(QCoreApplication.translate("ViewerWindow", u"Last 20 images", None))
         self.getAllImagesRadio.setText(QCoreApplication.translate("ViewerWindow", u"All Images", None))
+        self.plotPropertiesCheck.setText(QCoreApplication.translate("ViewerWindow", u"Plot Properties", None))
     # retranslateUi
 

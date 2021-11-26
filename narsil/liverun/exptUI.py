@@ -130,7 +130,7 @@ class MainWindow(QMainWindow):
         self.analysisSetupOk = True
 
         
-        self.liv
+        self.viewerWindow.setSaveDir(self.analysisSetupSettings['saveDir'])
 
     #############  setup button handlers ##################
 
@@ -190,7 +190,6 @@ class MainWindow(QMainWindow):
             print(self.database.tables)
             self.database.createTables()
 
-            self.viewerWindow.setSaveDir(self.analysisSetupSettings['saveDir'])
             
 
     def deleteDatabase(self):
