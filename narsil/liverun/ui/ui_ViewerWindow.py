@@ -187,6 +187,27 @@ class Ui_ViewerWindow(object):
         self.toActiveListButton = QPushButton(self.centralwidget)
         self.toActiveListButton.setObjectName(u"toActiveListButton")
         self.toActiveListButton.setGeometry(QRect(1230, 270, 41, 21))
+        self.viewActiveListCheck = QCheckBox(self.centralwidget)
+        self.viewActiveListCheck.setObjectName(u"viewActiveListCheck")
+        self.viewActiveListCheck.setGeometry(QRect(1000, 580, 92, 23))
+        self.viewActiveListCheck.setChecked(True)
+        self.horizontalLayoutWidget_4 = QWidget(self.centralwidget)
+        self.horizontalLayoutWidget_4.setObjectName(u"horizontalLayoutWidget_4")
+        self.horizontalLayoutWidget_4.setGeometry(QRect(620, 10, 230, 41))
+        self.horizontalLayout_4 = QHBoxLayout(self.horizontalLayoutWidget_4)
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
+        self.getOnly20Radio = QRadioButton(self.horizontalLayoutWidget_4)
+        self.getOnly20Radio.setObjectName(u"getOnly20Radio")
+        self.getOnly20Radio.setChecked(True)
+
+        self.horizontalLayout_4.addWidget(self.getOnly20Radio)
+
+        self.getAllImagesRadio = QRadioButton(self.horizontalLayoutWidget_4)
+        self.getAllImagesRadio.setObjectName(u"getAllImagesRadio")
+
+        self.horizontalLayout_4.addWidget(self.getAllImagesRadio)
+
         ViewerWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(ViewerWindow)
         self.menubar.setObjectName(u"menubar")
@@ -224,5 +245,8 @@ class Ui_ViewerWindow(object):
         self.isExptRunning.setText(QCoreApplication.translate("ViewerWindow", u"Is Expt running?", None))
         self.toTweezeListButton.setText(QCoreApplication.translate("ViewerWindow", u">>", None))
         self.toActiveListButton.setText(QCoreApplication.translate("ViewerWindow", u"<<", None))
+        self.viewActiveListCheck.setText(QCoreApplication.translate("ViewerWindow", u"Active? ", None))
+        self.getOnly20Radio.setText(QCoreApplication.translate("ViewerWindow", u"Last 20 images", None))
+        self.getAllImagesRadio.setText(QCoreApplication.translate("ViewerWindow", u"All Images", None))
     # retranslateUi
 

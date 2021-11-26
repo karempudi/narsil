@@ -248,9 +248,16 @@ class exptRun(object):
 
     def waitForPFS(self, event, bridge, event_queue):
         # wait for focus before acquisition 
-        core = bridge.get_core()
-        core.full_focus()
-        return event
+        if not self.acquireKillEvent.is_set():
+            core = bridge.get_core()
+            core.full_focus()
+            return event
+        else:
+            core = bridge.get_core()
+            core.stop_sequence_acquisition()
+            event_queue.clear()
+            event_queue.put(None)
+
 
     # fake acquiring outside to test positions  
     def acquireFake(self):

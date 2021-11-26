@@ -129,6 +129,9 @@ class MainWindow(QMainWindow):
         self.analysisSetupSettings = analysisSettings
         self.analysisSetupOk = True
 
+        
+        self.liv
+
     #############  setup button handlers ##################
 
     # setup button handler
@@ -164,7 +167,13 @@ class MainWindow(QMainWindow):
             self.database.dbname = self.exptSetupSettings['exptNo'].lower()
             self.database.createDatabase()
             self.databaseOk = True
-    
+
+            self.viewerWindow.setDatabase({'dbname': self.database.dbname,
+                                         'dbuser': 'postgres',
+                                         'dbpassword': 'postgres',
+                                         'tables': self.database.tables
+                                        })
+
     def createTables(self):
         # depending on what you analyze you can create appropriate table
         if self.analysisSetupOk == True:
@@ -180,6 +189,9 @@ class MainWindow(QMainWindow):
             self.database.tables = tables
             print(self.database.tables)
             self.database.createTables()
+
+            self.viewerWindow.setSaveDir(self.analysisSetupSettings['saveDir'])
+            
 
     def deleteDatabase(self):
         self.database.deleteDatabase()

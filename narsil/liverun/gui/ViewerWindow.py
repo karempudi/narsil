@@ -11,19 +11,26 @@ from skimage import io
 
 import numpy as np
 import sys
+import glob
 
 
 class ViewerWindow(QMainWindow):
 
 
-    def __init__(self, saveDir=None, database=None):
+    def __init__(self, saveDir='/home/pk/Documents/realtimeData/analysisData/',
+                database={
+                    'dbname': 'exp21bp000',
+                    'dbuser': 'postgres',
+                    'dbpassword': 'postgres',
+                    'tables': ['arrival', 'segment', 'deadalive', 'growth']
+                }):
         super(ViewerWindow, self).__init__()
         self.ui = Ui_ViewerWindow()
         self.ui.setupUi(self)
         self.setWindowTitle("Dead-Alive Viewer Window")
 
         #
-        self.saveDir = Path("/home/pk/Documents/realtimeData/analysisData/")
+        self.saveDir = Path(saveDir)
         self.database = database
 
         # thread object that will fetch 
@@ -39,9 +46,15 @@ class ViewerWindow(QMainWindow):
         self.showPhase = True
         self.showSeg = False
 
+        self.show20Images = True
+        self.showAllImages = False
+
 
         self.ui.activePositionsList.setSortingEnabled(True)
+        self.ui.tweezePositionsList.setSortingEnabled(True)
+        self.showActivePositions = True
         self.activePositions = []
+        self.tweezePositions = []
 
 
         self.rollingWindow = None
@@ -54,6 +67,12 @@ class ViewerWindow(QMainWindow):
 
 
         self.setupButtonHandlers()
+    
+    def setSaveDir(self, saveDirPath):
+        self.saveDir = Path(saveDirPath)
+
+    def setDatabase(self, database):
+        self.database = database
 
     def setupButtonHandlers(self,):
         # adjust plotting stuff
@@ -73,6 +92,10 @@ class ViewerWindow(QMainWindow):
         # set option handlers to show phase or seg
         self.ui.phaseImage.toggled.connect(self.setImageType)
         self.ui.cellSegImage.toggled.connect(self.setImageType)
+
+        # set if you want 20 images or all images
+        self.ui.getOnly20Radio.toggled.connect(self.setNumberOfImagesToGet)
+        self.ui.getAllImagesRadio.toggled.connect(self.setNumberOfImagesToGet)
 
         # fetch button handler 
         self.ui.fetchButton.clicked.connect(self.fetchData)
@@ -99,6 +122,9 @@ class ViewerWindow(QMainWindow):
         # hook up if the selection changed
         self.ui.activePositionsList.itemSelectionChanged.connect(self.showCurrentPosition)
 
+        # hook up if selection changed
+        self.ui.tweezePositionsList.itemSelectionChanged.connect(self.showCurrentPosition)
+
         # show position button?
         self.ui.showButton.clicked.connect(self.showCurrentPosition)
 
@@ -113,6 +139,15 @@ class ViewerWindow(QMainWindow):
 
         # next auto
         self.ui.nextAutoButton.clicked.connect(self.nextAutoPosition)
+
+        # select which position list to display
+        self.ui.viewActiveListCheck.toggled.connect(self.setViewActivePositions)
+
+        # move position and channel item to possible tweeze positions list
+        self.ui.toTweezeListButton.clicked.connect(self.sendPositionToTweezeList)
+
+        # move position and channel item back to active positions list
+        self.ui.toActiveListButton.clicked.connect(self.sendPositionToActiveList)
 
         # send tweeze positions to main window button 
         self.ui.sendTweezePositionsButton.clicked.connect(self.sendTweezableToMain)
@@ -146,10 +181,25 @@ class ViewerWindow(QMainWindow):
         self.showPhase = self.ui.phaseImage.isChecked()
         sys.stdout.write(f"Phase: {self.showPhase} Seg: {self.showSeg}\n")
         sys.stdout.flush()
+        self.showCurrentPosition()
+
+    def setNumberOfImagesToGet(self, clicked):
+        self.show20Images = self.ui.getOnly20Radio.isChecked()
+        self.showAllImages = self.ui.getAllImagesRadio.isChecked()
+        sys.stdout.write(f"Getting 20 images: {self.show20Images} all Images: {self.showAllImages}\n")
+        sys.stdout.flush()
+
+        self.showCurrentPosition()
 
     def setExptRunning(self, buttonState):
         self.exptRunning = buttonState
         sys.stdout.write(f"Expt is running : {self.exptRunning}\n")
+        sys.stdout.flush()
+
+    def setViewActivePositions(self, buttonState):
+        self.showActivePositions = buttonState
+        self.showCurrentPosition()
+        sys.stdout.write(f"Showing active positions: {self.showActivePositions}\n")
         sys.stdout.flush()
 
     def fetchData(self):
@@ -158,12 +208,14 @@ class ViewerWindow(QMainWindow):
         sys.stdout.write("Fetch Button clicked\n")
         sys.stdout.flush()
         imgType = 'phase' if self.showPhase else 'cellSeg'
+        numberOfImageToShow = True if self.show20Images else False
 
         if self.imageFetchThread is None:
             self.imageFetchThread =  ImageFetchThread({'positionNo': self.currentPosition, 
                                 'channelNo': self.currentChannelNo,
                                 'type': imgType,
-                                'dir': self.saveDir})
+                                'dir': self.saveDir,
+                                'show20Images': numberOfImageToShow})
             self.imageFetchThread.start()
             self.imageFetchThread.dataFetched.connect(self.updateImage)
 
@@ -193,7 +245,11 @@ class ViewerWindow(QMainWindow):
 
     def showCurrentPosition(self, clicked=None):
         try:
-            selectedItem = self.ui.activePositionsList.currentItem().text()
+            if self.showActivePositions:
+                selectedItem = self.ui.activePositionsList.currentItem().text()
+            else:
+                selectedItem = self.ui.tweezePositionsList.currentItem().text()
+
             position = int(selectedItem.split(" ")[1])
             channelNo = int(selectedItem.split(" ")[3])
             sys.stdout.write(f"Selected row is -- {position} -- {channelNo} \n")
@@ -208,7 +264,8 @@ class ViewerWindow(QMainWindow):
             self.currentChannelNo = channelNo
             self.ui.positionNoLine.setText(str(self.currentPosition))
             self.ui.channelNoLine.setText(str(self.currentChannelNo))
-            self.fetchData()
+            if (self.currentPosition  is not None) and (self.currentChannelNo is not None):
+                self.fetchData()
 
     def removeCurrentPosition(self, clicked):
         try:
@@ -228,6 +285,48 @@ class ViewerWindow(QMainWindow):
             if len(self.activePositions) == 0:
                 self.currentPosition = None
                 self.currentChannelNo = None
+
+    def sendPositionToTweezeList(self, clicked):
+        try:
+            selectedItems = self.ui.activePositionsList.selectedItems()
+            for item in selectedItems:
+                self.ui.activePositionsList.takeItem(self.ui.activePositionsList.row(item))
+                itemText = item.text()
+                position = int(itemText.split(" ")[1])
+                channelNo = int(itemText.split(" ")[3])
+                self.ui.tweezePositionsList.addItem(itemText)
+                self.activePositions.remove((position, channelNo))
+                self.tweezePositions.append((position, channelNo))
+                sys.stdout.write(f"Moved Pos: {position} ChNo: {channelNo} to tweeze list\n")
+                sys.stdout.flush()
+        except Exception as e:
+            sys.stdout.write(f"Moving channel to tweeze list failed -- {e}\n")
+            sys.stdout.flush()
+
+        finally:
+            if len(self.tweezePositions) > 0:
+                self.ui.tweezePositionsList.setCurrentRow(0)
+
+    def sendPositionToActiveList(self, clicked):
+        try:
+            selectedItems = self.ui.tweezePositionsList.selectedItems()
+            for item in selectedItems:
+                self.ui.tweezePositionsList.takeItem(self.ui.tweezePositionsList.row(item))
+                itemText = item.text()
+                position = int(itemText.split(" ")[1])
+                channelNo = int(itemText.split(" ")[3])
+                self.ui.activePositionsList.addItem(itemText)
+                self.activePositions.append((position, channelNo))
+                self.tweezePositions.remove((position, channelNo))
+                sys.stdout.write(f"Moved Pos: {position} and ChNo: {channelNo} to active list\n")
+                sys.stdout.flush()
+        except Exception as e:
+            sys.stdout.write(f"Moving channel to active list failed -- {e}\n")
+            sys.stdout.flush()
+        finally:
+            if len(self.activePositions) > 0:
+                self.ui.activePositionsList.setCurrentRow(0)
+
 
     def undoRemovedPosition(self, clicked):
         pass
@@ -274,18 +373,30 @@ class ImageFetchThread(QThread):
             elif self.fetch_data['type'] == 'cellSeg':
                 directory = self.fetch_data['dir'] / str(self.fetch_data['positionNo']) / "oneMMChannelCellSeg" / str(self.fetch_data['channelNo'])
 
-            number_images = 20
-            
-            files = [ directory / (str(i) + '.tiff') for i in range(0, number_images)]
+            # get 20 images from the last of the stack for display
+            fileindices = [int(filename.stem)  for filename in list(directory.glob('*.tiff'))]
+            fileindices.sort()
 
-            image = io.imread(files[0])
-            for i in range(1, number_images):
-                image = np.concatenate((image, io.imread(files[i])), axis = 1)
+            if self.fetch_data['show20Images']:
+                fileIndicesToGet = fileindices[-20:]
+            else:
+                fileIndicesToGet = fileindices
             
-            self.data = image
+            files = [ directory / (str(i) + '.tiff') for i in fileIndicesToGet]
 
-            sys.stdout.write(f"Image shape: {image.shape}\n")
-            sys.stdout.flush()
+            number_images = len(files)
+            if len(files) > 0:
+                image = io.imread(files[0])
+                for i in range(1, number_images):
+                    image = np.concatenate((image, io.imread(files[i])), axis = 1)
+                
+                self.data = image
+
+                sys.stdout.write(f"Image shape: {image.shape}\n")
+                sys.stdout.flush()
+            else:
+                raise FileNotFoundError
+
         except Exception as e:
             sys.stdout.write(f"Data couldnot be fetched : {e}\n")
             sys.stdout.flush()
