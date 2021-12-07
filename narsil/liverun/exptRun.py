@@ -264,9 +264,9 @@ class exptRun(object):
         #self.loadNets()
         #testDataDir = Path("C:\\Users\\Praneeth\\Documents\\Elflab\\Code\\testdata\\hetero40x")
         #testDataDir = Path("D:\\Jimmy\\EXP-21-BY1006\\therun")
-        testDataDir = Path("D:\\praneeth\\hetero40x")
+        #testDataDir = Path("D:\\praneeth\\hetero40x")
         #testDataDir = Path("/home/pk/Documents/EXP-21-BY1006/therun")
-        #testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x")
+        testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x")
         for event in self.acquireEvents:
             print(f"{event['axes']['position']} -- {event['axes']['time']}")
             positionStr = "Pos10" + str(event['axes']['position'])
@@ -288,7 +288,8 @@ class exptRun(object):
 
         while not self.acquireKillEvent.is_set():
             try:
-                time.sleep(2)
+                time.sleep(5)
+                continue
             except KeyboardInterrupt:
                 self.acquireKillEvent.set()
                 sys.stdout.write("AcquireFake process interrupted using keyboard\n")
@@ -694,7 +695,7 @@ class exptRun(object):
                         #image = data['image'].to(self.device)
                         image = data['image'].to(self.device)
                         if data == None:
-                            #time.sleep(2)
+                            time.sleep(5)
                             continue
                         channelLocations = self.processChannels(image, int(data['position']), int(data['time']))
                         # put the datapoint in the queue for calculating the growth stuff like areas, lengths, etc
@@ -812,6 +813,7 @@ class exptRun(object):
                     for data in dataloader:
                         #calculateOnePosition(data['position'], data['time'], data['numChannels'])
                         if data is None:
+                            time.sleep(5)
                             continue
                         else:
                             # arguments construction for pool execution
@@ -856,7 +858,7 @@ class exptRun(object):
     # if it fails write the state and bail, and use this state to restart after adjusting 
     def savedState(self):
         pass
-    
+   
 def runProcesses(exptRunObject):
     #exptRunObject.loadNets()
     try:

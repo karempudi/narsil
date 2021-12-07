@@ -232,6 +232,7 @@ class MainWindow(QMainWindow):
 
     def stopExpt(self):
         # send kill signal to the QProcess running the experiment
+        self.timer.stop()
         if self.exptSetupOk:
             self.exptRun.stop()
    
@@ -275,6 +276,9 @@ class MainWindow(QMainWindow):
     # in the intialization of the UI
     def updateStatusPlots(self):
         # Get data from each table and update the plot data
+
+        sys.stdout.write(f"Refreshing plots: {datetime.now()}\n")
+        sys.stdout.flush()
         acquiredData = self.database.queryDataForPlots(tableName='arrival')
         segmentData = self.database.queryDataForPlots(tableName='segment')
         self.acquiredPlot.plot(np.array(acquiredData), symbol='o', pen=pg.mkPen(None))
