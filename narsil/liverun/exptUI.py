@@ -6,6 +6,7 @@ import numpy as np
 import time
 import torch
 import random
+import json
 from pathlib import Path
 from collections import OrderedDict
 
@@ -51,7 +52,6 @@ class MainWindow(QMainWindow):
         self.analysisSetupOk = False
 
         # database, tables Ok
-        self.databaseOk = False
         self.tablesOk = False
 
         # setup button handlers
@@ -89,6 +89,12 @@ class MainWindow(QMainWindow):
         self.ui.setupButton.clicked.connect(self.showSetupWindow)
         # view setup button
         self.ui.viewExptSetupButton.clicked.connect(self.viewSetup)
+
+        # write setup to file
+        self.ui.writeSetupButton.clicked.connect(self.writeSetup)
+
+        # load setup from file
+        self.ui.loadSetupButton.clicked.connect(self.loadSetup)
 
         ############# controls button ############
         # create a database for the experiment
@@ -160,6 +166,86 @@ class MainWindow(QMainWindow):
         msg.setWindowTitle("Setup and Analysis Settings")
         msg.setText(expt_string + "\n\n" + analysis_string)
         msg.exec()     
+
+    # write the setup file to the specified location
+    # Setup file should have everything that is needed for the exptRun class, that 
+    # runs all the analysis functions
+    def writeSetup(self):
+        writeDict = {}
+        if self.exptSetupOk:
+            writeDict['setup'] = self.exptSetupSettings
+        
+        if self.analysisSetupOk:
+            writeDict['analysis'] = self.analysisSetupSettings
+
+        if self.databaseOk:
+            writeDict['database'] = {
+                'dbname': self.database.dbname,
+                'dbuser': 'postgres',
+                'dbpassword': 'postgres',
+                'tables': self.database.tables
+            }
+        
+        saveDir = QFileDialog.getExistingDirectory(self,
+                self.tr("Save expt setup file"), '.', 
+                QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
+                )
+        #filename = self.exptSetupSettings['exptNo'].lower() + '.json'
+        filename = 'exp21bp000' + '.json'
+        saveFilename = Path(saveDir) / filename
+
+        with open(saveFilename, 'w') as filehandle:
+            json.dump(writeDict, filehandle)
+
+        sys.stdout.write(f"{saveFilename} -- Expt Setup written\n")
+        sys.stdout.flush()
+
+
+    # Load setup from file,
+    # in case the UI dies, we will reload the setup from the file and run as usual
+    def loadSetup(self):
+        # load the file using a file dialog and set everything that is needed for all the windows to work
+
+        filename = QFileDialog.getOpenFileName(self,
+                    self.tr("Open a Expt setup file"), '.', self.tr("Expt setup file (*.json)"))
+        
+        if filename == '':
+            msg = QMessageBox()
+            msg.setText("Expt setup file not selected")
+            msg.exec()
+        else:
+            try:
+                with open(Path(filename)) as json_file:
+                    exptDict = json.load(json_file)
+
+                if 'setup' in exptDict:
+                    self.exptSetupSettings = exptDict['setup']
+                    self.exptSetupOk = True
+                else:
+                    sys.stdout.write(f"Expt Setup not found\n")
+                    sys.stdout.flush()
+
+                if 'analysis' in exptDict:
+                    self.analysisSetupSettings = exptDict['analysis']
+                    self.analysisSetupOk = True
+                
+                else:
+                    sys.stdout.write(f"Analysis Setup not found\n")
+                    sys.stdout.flush()
+                
+                if 'database' in exptDict:
+                    self.database.dbname = self.exptSetupSettings['exptNo'].lower()
+                    self.database.tables = exptDict['database']['tables']
+                    self.databaseOk = True
+                    self.viewerWindow.setDatabase(exptDict['database'])
+                else:
+                    sys.stdout.write(f"Database setup not found\n")
+                    sys.stdout.flush()
+
+            except Exception as e:
+                sys.stdout.write(f"Error in loading setup -- {e}\n")
+                sys.stdout.flush()
+
     
     ############ controls button handlers ##################
     def createDatabase(self):
