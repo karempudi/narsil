@@ -215,7 +215,7 @@ class MainWindow(QMainWindow):
             msg.exec()
         else:
             try:
-                with open(Path(filename)) as json_file:
+                with open(Path(filename[0])) as json_file:
                     exptDict = json.load(json_file)
 
                 if 'setup' in exptDict:

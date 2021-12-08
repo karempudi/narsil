@@ -4,6 +4,7 @@ from PySide6.QtGui import QIntValidator
 from PySide6.QtUiTools import QUiLoader
 
 from narsil.liverun.ui.ui_RunWindow import Ui_runWindow
+from narsil.liverun.exptRun import exptRun, runProcesses
 
 from pathlib import Path
 from skimage import io
@@ -11,6 +12,7 @@ from skimage import io
 import numpy as np
 import sys
 import glob
+import json
 
 
 class RunWindow(QMainWindow):
@@ -23,6 +25,11 @@ class RunWindow(QMainWindow):
 
 
         self.exptRunDict = None
+
+        self.exptRun = exptRun()
+        self.exptRunStarted = False
+
+        self.setupOk = False
 
         self.setupButtonHandlers()
     
@@ -38,18 +45,57 @@ class RunWindow(QMainWindow):
 
     def loadExptRun(self, clicked):
         try:
-            pass
+            filename = QFileDialog.getOpenFileName(self,
+                    self.tr("Open an experiment setup json file"), '.',
+                    self.tr("Expt setup json file (*.json)"))
+            
+            if filename == '':
+                msg = QMessageBox()
+                msg.setText("Expt setup file not selected")
+                msg.exec()
+            else:
+                with open(Path(filename[0])) as json_file:
+                    self.exptRunDict = json.load(json_file)
+           
         except Exception as e:
             sys.stdout.write(f"Error in loading the experimental setup file -- {e}\n")
             sys.stdout.flush()
         finally:
-            pass
+
+            if ('setup' in self.exptRunDict) and ('analysis' in self.exptRunDict) and ('database' in self.exptRunDict):
+                self.setupOk = True
+            sys.stdout.write(f"File contains: {self.exptRunDict.keys()}, Setup Ok: {self.setupOk}\n")
+            sys.stdout.flush()
 
     def runExpt(self, clicked):
-        sys.stdout.write(f"Run started ... :)\n")
-        sys.stdout.flush()
+        if self.setupOk:
+            # run the experiment
+            self.exptRun.acquireEvents = self.exptRunDict['setup']['events']
+            self.exptRun.imageProcessParameters = {
+                'imageHeight': self.exptRunDict['analysis']["imageHeight"],
+                'imageWidth': self.exptRunDict['analysis']["imageWidth"],
+                'cellModelPath': self.exptRunDict['analysis']["cellSegNetModelPath"],
+                'channelModelPath': self.exptRunDict['analysis']["channelSegNetModelPath"],
+                'saveDir': self.exptRunDict['analysis']["saveDir"]
+            }
+
+            self.exptRun.dbParameters = self.exptRunDict['database']
+
+            self.exptRun.setImageTransforms()
+
+            runProcesses(self.exptRun)
+            self.exptRunStarted = True
+
+
+            sys.stdout.write(f"Expt setup ok ... Running now:)\n")
+            sys.stdout.flush()
+
 
     def stopExpt(self, clicked):
+
+        if self.exptRunStarted and self.setupOk:
+            self.exptRun.stop()
+
         sys.stdout.write(f"Run stopped ... :(\n")
         sys.stdout.flush()
 
