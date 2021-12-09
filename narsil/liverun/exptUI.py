@@ -106,10 +106,10 @@ class MainWindow(QMainWindow):
         # delete tables in the database
         self.ui.deleteTablesButton.clicked.connect(self.deleteTables)
 
-        # start the experiment
-        self.ui.startExptButton.clicked.connect(self.startExpt)
-        # stop the experiment
-        self.ui.stopExptButton.clicked.connect(self.stopExpt)
+        # start the experiment plots
+        self.ui.startPlotsButton.clicked.connect(self.startPlotting)
+        # stop the experiment plots
+        self.ui.stopPlotsButton.clicked.connect(self.stopPlotting)
         # move to position no
         self.ui.moveToPositionButton.clicked.connect(self.moveToPosition)
         # live window can be used for tweezing
@@ -228,7 +228,8 @@ class MainWindow(QMainWindow):
                 if 'analysis' in exptDict:
                     self.analysisSetupSettings = exptDict['analysis']
                     self.analysisSetupOk = True
-                
+                    self.viewerWindow.setSaveDir(self.analysisSetupSettings['saveDir'])
+
                 else:
                     sys.stdout.write(f"Analysis Setup not found\n")
                     sys.stdout.flush()
@@ -286,28 +287,7 @@ class MainWindow(QMainWindow):
         self.database.deleteTables()
         self.databaseOk = False
 
-    def startExpt(self):
-        # basically launch a QProcess and call scirpt with appropriate arugments
-        if self.exptSetupOk and self.databaseOk:
-            self.exptRun.acquireEvents = self.exptSetupSettings['events'] 
-            self.exptRun.imageProcessParameters = {'imageHeight': self.analysisSetupSettings["imageHeight"],
-                                            'imageWidth': self.analysisSetupSettings["imageWidth"],
-                                            'cellModelPath': self.analysisSetupSettings["cellSegNetModelPath"],
-                                            'channelModelPath': self.analysisSetupSettings["channelSegNetModelPath"],
-                                            'saveDir': self.analysisSetupSettings["saveDir"]}
-            # run with default password, do user-password creation later 
-            self.exptRun.dbParameters = {'dbname': self.database.dbname,
-                                         'dbuser': 'postgres',
-                                         'dbpassword': 'postgres',
-                                         'tables': self.database.tables
-                                        }
-            self.exptRun.setImageTransforms()
-
-            #self.exptRun.run()
-            runProcesses(self.exptRun)
-            sys.stdout.write("Expt setup is ok .. Running now ...\n")
-            sys.stdout.flush()
-
+    def startPlotting(self):
             self.initializePlots()
 
             # timer that update plots every few seconds
@@ -316,12 +296,9 @@ class MainWindow(QMainWindow):
             self.timer.timeout.connect(self.updateStatusPlots)
             self.timer.start()
 
-    def stopExpt(self):
-        # send kill signal to the QProcess running the experiment
+    def stopPlotting(self):
         self.timer.stop()
-        if self.exptSetupOk:
-            self.exptRun.stop()
-   
+
     def moveToPosition(self):
         pass
     

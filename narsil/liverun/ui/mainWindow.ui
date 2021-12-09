@@ -240,7 +240,7 @@
     <property name="title">
      <string>Controls</string>
     </property>
-    <widget class="QPushButton" name="stopExptButton">
+    <widget class="QPushButton" name="stopPlotsButton">
      <property name="geometry">
       <rect>
        <x>20</x>
@@ -250,10 +250,10 @@
       </rect>
      </property>
      <property name="text">
-      <string>Stop Expt</string>
+      <string>Stop Plots</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="startExptButton">
+    <widget class="QPushButton" name="startPlotsButton">
      <property name="geometry">
       <rect>
        <x>20</x>
@@ -263,7 +263,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>Start Expt</string>
+      <string>Start Plots</string>
      </property>
     </widget>
     <widget class="QPushButton" name="createDbButton">
