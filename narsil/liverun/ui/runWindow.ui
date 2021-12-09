@@ -17,7 +17,7 @@
    <widget class="QPushButton" name="loadButton">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>10</x>
       <y>30</y>
       <width>89</width>
       <height>25</height>
@@ -30,7 +30,7 @@
    <widget class="QPushButton" name="runButton">
     <property name="geometry">
      <rect>
-      <x>170</x>
+      <x>240</x>
       <y>30</y>
       <width>89</width>
       <height>25</height>
@@ -43,7 +43,7 @@
    <widget class="QPushButton" name="stopButton">
     <property name="geometry">
      <rect>
-      <x>280</x>
+      <x>340</x>
       <y>30</y>
       <width>89</width>
       <height>25</height>
@@ -51,6 +51,19 @@
     </property>
     <property name="text">
      <string>Stop</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="makeFilesButton">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>30</y>
+      <width>101</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Allocate Files</string>
     </property>
    </widget>
   </widget>

@@ -13,6 +13,7 @@ import numpy as np
 import sys
 import glob
 import json
+import concurrent.futures
 
 
 class RunWindow(QMainWindow):
@@ -31,6 +32,8 @@ class RunWindow(QMainWindow):
 
         self.setupOk = False
 
+        self.filesAllocated = False
+
         self.setupButtonHandlers()
     
     def setupButtonHandlers(self):
@@ -38,10 +41,37 @@ class RunWindow(QMainWindow):
         # load the data from the experiment file
         self.ui.loadButton.clicked.connect(self.loadExptRun)
 
+        # allocate files on disk before starting the experiment, especially the small files
+        self.ui.makeFilesButton.clicked.connect(self.allocateFiles)
+
         # Run the experiment
         self.ui.runButton.clicked.connect(self.runExpt)
 
         self.ui.stopButton.clicked.connect(self.stopExpt)
+    
+    def allocateFiles(self):
+
+        if not self.setupOk:
+            sys.stdout.write(f"Setup is not done correctly. Check all setup variables are set ... \n")
+            sys.stdout.flush()
+
+        if not self.filesAllocated:
+            timepoints = self.exptRunDict['setup']['nTimePoints']
+            nPositions = self.exptRunDict['nPositions']
+            saveDir = self.exptRunDict['analysis']['saveDir']
+            # pull this from channel process parameters later set as constant for now
+            channelWidth = 36
+            channelHeight = self.exptRunDict['analysis']['imageHeight']
+
+            # loop over the positions and concurrently create all the file needed 
+
+
+            sys.stdout.write(f"Pre-Allocating files on disk ...\n")
+            sys.stdout.flush()
+            self.filesAllocated = True
+        else:
+            sys.stdout.write(f"Files already allocated ...\n")
+            sys.stdout.flush()
 
     def loadExptRun(self, clicked):
         try:
