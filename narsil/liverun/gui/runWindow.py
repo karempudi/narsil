@@ -48,6 +48,39 @@ class RunWindow(QMainWindow):
         self.ui.runButton.clicked.connect(self.runExpt)
 
         self.ui.stopButton.clicked.connect(self.stopExpt)
+
+
+    def allocateOnePosition(self, position):
+        saveDir = Path(self.exptRunDict['analysis']['saveDir'])
+        channelWidth = 36
+        channelHeight = self.exptRunDict['analysis']['imageHeight']
+        nChannels = 105
+        posDir = saveDir / str(position) / "singleChannelStacks"
+        if not posDir.exists():
+            posDir.mkdir(parents=True, exist_ok=True)
+
+        timepoints = self.exptRunDict['setup']['nTimePoints']
+        try:
+
+            for i in range(nChannels):
+                # create an allocate a numpy array compressed ,
+                # one with uint16s for phase images stack adn
+                # one with uint8s for cell Seg stacks
+                phase_stack = np.random.randint(low=0, high=65535, size=(timepoints, channelHeight, channelWidth), dtype='uint16')
+                cellseg_stack = np.random.randint(low=0, high=255, size=(timepoints, channelHeight, channelWidth), dtype='uint8')
+                filename = str(i) + '.npz'
+                savePath = posDir / filename
+
+                with open(savePath, 'wb') as filehandle:
+                    np.savez_compressed(filehandle, phase=phase_stack, seg=cellseg_stack)
+            
+
+        except Exception as e:
+            sys.stdout.write(f"Error in creating files during allocation -- {e}\n")
+            sys.stdout.flush()
+            
+        sys.stdout.write(f"{posDir} --- Files created\n")
+        sys.stdout.flush()
     
     def allocateFiles(self):
 
@@ -56,15 +89,11 @@ class RunWindow(QMainWindow):
             sys.stdout.flush()
 
         if not self.filesAllocated:
-            timepoints = self.exptRunDict['setup']['nTimePoints']
-            nPositions = self.exptRunDict['nPositions']
-            saveDir = self.exptRunDict['analysis']['saveDir']
-            # pull this from channel process parameters later set as constant for now
-            channelWidth = 36
-            channelHeight = self.exptRunDict['analysis']['imageHeight']
+            nPositions = self.exptRunDict['setup']['nPositions']
 
             # loop over the positions and concurrently create all the file needed 
-
+            with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+                executor.map(self.allocateOnePosition, range(nPositions))
 
             sys.stdout.write(f"Pre-Allocating files on disk ...\n")
             sys.stdout.flush()
