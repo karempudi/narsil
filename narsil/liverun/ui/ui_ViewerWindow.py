@@ -28,6 +28,11 @@ class Ui_ViewerWindow(object):
         if not ViewerWindow.objectName():
             ViewerWindow.setObjectName(u"ViewerWindow")
         ViewerWindow.resize(1577, 736)
+        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(ViewerWindow.sizePolicy().hasHeightForWidth())
+        ViewerWindow.setSizePolicy(sizePolicy)
         self.centralwidget = QWidget(ViewerWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.removeButton = QPushButton(self.centralwidget)

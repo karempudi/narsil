@@ -12,7 +12,8 @@ from skimage import io
 import numpy as np
 import sys
 import glob
-
+import pyqtgraph as pg
+import psycopg2 as pgdatabase
 
 class ViewerWindow(QMainWindow):
 
@@ -33,9 +34,13 @@ class ViewerWindow(QMainWindow):
         self.saveDir = Path(saveDir)
         self.database = database
 
-        # thread object that will fetch 
+        # thread object that will fetch images
         self.imageFetchThread = None
         self.imgThreadRunning = False
+
+        # thread object that will fetch properties
+        self.propFetchThread = None
+        self.propFetchRunning = False
 
         self.currentPosition = None
         self.positionNoValidator = QIntValidator(0, 10000, self.ui.positionNoLine)
@@ -229,6 +234,14 @@ class ViewerWindow(QMainWindow):
                                 'show20Images': numberOfImageToShow})
             self.imageFetchThread.start()
             self.imageFetchThread.dataFetched.connect(self.updateImage)
+        
+        if self.propFetchThread is None:
+            self.propFetchThread = propertiesFetchThread({
+
+                            })
+            self.propFetchThread.start()
+            self.propFetchThread.dataFetched.connect(self.updatePlots)
+        
 
     def setRollingWindow(self):
         rollingWindow = self.ui.windowLengthLine.text()
@@ -364,6 +377,20 @@ class ViewerWindow(QMainWindow):
         self.imageFetchThread.quit()
         self.imageFetchThread.wait()
         self.imageFetchThread = None
+    
+    def updatePlots(self):
+        sys.stdout.write("Properties data received\n")
+        sys.stdout.flush()
+        self.plot = self.ui.propertiesView.getPlotItem()
+        self.plot.clear()
+        self.plot.setLabel('bottom', text='Frame Number')
+        if self.propFetchThread.data is None:
+            sys.stdout.write("BOOOM BOOOM BOOOM\n")
+            sys.stdout.flush()
+        self.plot.plot(self.propFetchThread.data, pen='r')
+        self.propFetchThread.quit()
+        self.propFetchThread.wait()
+        self.propFetchThread = None
 
 class propertiesFetchThread(QThread):
 
@@ -384,9 +411,12 @@ class propertiesFetchThread(QThread):
             pass
 
         finally:
-            con = None
+            self.data = np.random.normal(size=(1000,))
+        
+        sys.stdout.write(f"Fetched properties ---- \n")
+        sys.stdout.flush()
 
-        return None
+        self.dataFetched.emit()
 
     def getData(self):
         return self.data
