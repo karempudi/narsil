@@ -264,9 +264,9 @@ class exptRun(object):
         #self.loadNets()
         #testDataDir = Path("C:\\Users\\Praneeth\\Documents\\Elflab\\Code\\testdata\\hetero40x")
         #testDataDir = Path("D:\\Jimmy\\EXP-21-BY1006\\therun")
-        testDataDir = Path("D:\\praneeth\\hetero40x")
+        #testDataDir = Path("D:\\praneeth\\hetero40x")
         #testDataDir = Path("/home/pk/Documents/EXP-21-BY1006/therun")
-        #testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x")
+        testDataDir = Path("/home/pk/Documents/realtimeData/hetero40x")
         for event in self.acquireEvents:
             print(f"{event['axes']['position']} -- {event['axes']['time']}")
             positionStr = "Pos10" + str(event['axes']['position'])
@@ -734,11 +734,11 @@ class exptRun(object):
             filename = str(time) + '.tiff'
             positionDir = str(position)
 
-            phaseImageFilename = mainAnalysisDir / positionDir / "phaseFullImage" / filename
+            #phaseImageFilename = mainAnalysisDir / positionDir / "phaseFullImage" / filename
             segImageFilename = mainAnalysisDir / positionDir / "cellSegmentation" / filename
 
             # read the phase image cut and write
-            phase_img = io.imread(phaseImageFilename)
+            #phase_img = io.imread(phaseImageFilename)
             seg_img = io.imread(segImageFilename)
             seg_img = seg_img.astype('uint8')
 
@@ -748,21 +748,21 @@ class exptRun(object):
             channelWidth = self.channelProcessParameters['channelWidth'] // 2
             for (i, location) in enumerate(channelLocations, 0):
                 channelNo = str(i)
-                phaseChannelsDir  = mainAnalysisDir / positionDir/ "oneMMChannelPhase" / channelNo
-                segChannelsDir = mainAnalysisDir / positionDir / "oneMMChannelCellSeg" / channelNo
-                if not phaseChannelsDir.exists():
-                    phaseChannelsDir.mkdir(parents=True, exist_ok=True)
+                #phaseChannelsDir  = mainAnalysisDir / positionDir/ "oneMMChannelPhase" / channelNo
+                #segChannelsDir = mainAnalysisDir / positionDir / "oneMMChannelCellSeg" / channelNo
+                #if not phaseChannelsDir.exists():
+                #    phaseChannelsDir.mkdir(parents=True, exist_ok=True)
                 
-                if not segChannelsDir.exists():
-                    segChannelsDir.mkdir(parents=True, exist_ok=True)
+                #if not segChannelsDir.exists():
+                #    segChannelsDir.mkdir(parents=True, exist_ok=True)
 
-                phaseChannelImg = phase_img[:,
-                                    location - channelWidth: location + channelWidth]
+                #phaseChannelImg = phase_img[:,
+                #                    location - channelWidth: location + channelWidth]
                 segChannelImg = seg_img[:,
                                     location - channelWidth: location + channelWidth]
                 # write the image
-                phaseChannelFileName = phaseChannelsDir / filename
-                segChannelFileName = segChannelsDir / filename
+                #phaseChannelFileName = phaseChannelsDir / filename
+                #segChannelFileName = segChannelsDir / filename
 
                 props = regionprops(label(segChannelImg))
                 areas = []
@@ -783,8 +783,8 @@ class exptRun(object):
                     'numobjects': pickle.dumps(numobjects)
                 } 
                 
-                io.imsave(phaseChannelFileName, phaseChannelImg.astype('float16'), check_contrast=False, compress = 6, plugin='tifffile')
-                io.imsave(segChannelFileName, segChannelImg.astype('uint8'), check_contrast=False, compress=6, plugin='tifffile')
+                #io.imsave(phaseChannelFileName, phaseChannelImg.astype('float16'), check_contrast=False, compress = 6, plugin='tifffile')
+                #io.imsave(segChannelFileName, segChannelImg.astype('uint8'), check_contrast=False, compress=6, plugin='tifffile')
 
                 dataToDatabase.append(channelPropertiesToDatabase)
 

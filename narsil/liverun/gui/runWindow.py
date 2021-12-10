@@ -92,10 +92,10 @@ class RunWindow(QMainWindow):
             nPositions = self.exptRunDict['setup']['nPositions']
 
             # loop over the positions and concurrently create all the file needed 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
-                executor.map(self.allocateOnePosition, range(nPositions))
+            #with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+            #    executor.map(self.allocateOnePosition, range(nPositions))
 
-            sys.stdout.write(f"Pre-Allocating files on disk ...\n")
+            sys.stdout.write(f"Pre-Allocating files on disk  option not available for now...\n")
             sys.stdout.flush()
             self.filesAllocated = True
         else:
