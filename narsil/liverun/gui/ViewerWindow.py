@@ -11,6 +11,7 @@ from skimage import io
 
 import numpy as np
 import sys
+import pickle
 import glob
 import pyqtgraph as pg
 import psycopg2 as pgdatabase
@@ -33,6 +34,7 @@ class ViewerWindow(QMainWindow):
         #
         self.saveDir = Path(saveDir)
         self.database = database
+        self.databaseOk = False
 
         # thread object that will fetch images
         self.dataFetchThread = None
@@ -76,6 +78,7 @@ class ViewerWindow(QMainWindow):
 
     def setDatabase(self, database):
         self.database = database
+        self.databaseOk = True
 
     def setupButtonHandlers(self,):
         # adjust plotting stuff
@@ -362,8 +365,9 @@ class ViewerWindow(QMainWindow):
         #sys.stdout.write("Image received\n")
         #sys.stdout.flush()
         self.ui.imagePlot.setImage(self.dataFetchThread.getData()['image'], autoLevels=True, autoRange=False)
-        self.ui.propertiesView.getPlotItem().plot(self.dataFetchThread.getData()['properties'], clear=True, pen='r')
-        self.ui.propertiesView.getPlotItem().plot(self.dataFetchThread.getData()['properties'] + 1, pen='b')
+        self.ui.propertiesView.getPlotItem().plot(self.dataFetchThread.getData()['areas'], clear=True, pen='r')
+        self.ui.propertiesView.getPlotItem().plot(self.dataFetchThread.getData()['lengths'], pen='b')
+        self.ui.propertiesView.getPlotItem().plot(self.dataFetchThread.getData()['numobjects'], pen='g')
         #sys.stdout.write("Image plotted\n")
         #sys.stdout.flush()
         self.dataFetchThread.quit()
@@ -391,6 +395,26 @@ class dataFetchThread(QThread):
         try:
             # fetch all the images that are there in the directory
             # construct image by fetching
+            con = None
+            con = pgdatabase.connect(database=self.fetch_data['database']['dbname'], user=self.fetch_data['database']['dbuser'],
+                                password=self.fetch_data['database']['dbpassword'])
+            con.autocommit=True
+            cur = con.cursor()
+            cur.execute("SELECT timepoint, areas, lengths, numobjects FROM growth WHERE position=%s AND channelno=%s", (self.fetch_data['positionNo'], self.fetch_data['channelNo']))
+
+            data = cur.fetchall()
+            sorted_data = sorted(data, key=lambda element: element[0])
+
+            formatted_data = [ (datapoint[0], pickle.loads(datapoint[1]), pickle.loads(datapoint[2]), pickle.loads(datapoint[3]))
+                                for datapoint in sorted_data]
+            
+            areas = np.zeros(shape=len(formatted_data))
+            lengths = np.zeros(shape=len(formatted_data))
+            numobjects = np.zeros(shape=len(formatted_data))
+            for timepoint, datapoint in enumerate(formatted_data, 0):
+                areas[timepoint] = sum(datapoint[1])
+                lengths[timepoint] = sum(datapoint[2])
+                numobjects[timepoint] = len(datapoint[3])
 
             if self.fetch_data['type'] == 'phase':
                 directory = self.fetch_data['dir'] / str(self.fetch_data['positionNo']) / "oneMMChannelPhase" / str(self.fetch_data['channelNo'])
@@ -419,7 +443,9 @@ class dataFetchThread(QThread):
                 
                 self.data = {
                     'image': image,
-                    'properties': np.random.normal(loc=0.0, scale=1.0, size=(100,))
+                    'areas': areas,
+                    'lengths': lengths,
+                    'numobjects': numobjects
                 }
 
                 sys.stdout.write(f"Image shape: {image.shape}\n")
@@ -431,11 +457,17 @@ class dataFetchThread(QThread):
             sys.stdout.write(f"Data couldnot be fetched : {e}\n")
             sys.stdout.flush()
             self.data =  {'image' : np.random.normal(loc=0.0, scale=1.0, size=(100, 100)),
-                            'properties': np.random.norma(loc=0.0, scale=1.0, size=(100,))}
+                        'areas': np.random.normal(loc=0.0, scale=1.0, size=(40,)),
+                        'lengths': np.random.normal(loc=0.0, scale=1.0, size=(40,)),
+                        'numobjects': np.random.normal(loc=0.0, scale=1.0, size=(40,))
+            }
+
 
         #self.data = np.random.normal(loc=0.0, scale=1.0, size=(100, 100))
-
-        self.dataFetched.emit()
+        finally:
+            if con:
+                con.close()
+            self.dataFetched.emit()
 
 
     def getData(self):
