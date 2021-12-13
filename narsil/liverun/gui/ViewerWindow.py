@@ -227,7 +227,9 @@ class ViewerWindow(QMainWindow):
                                 'channelNo': self.currentChannelNo,
                                 'type': imgType,
                                 'dir': self.saveDir,
-                                'show20Images': numberOfImageToShow})
+                                'show20Images': numberOfImageToShow,
+                                'properties': ['area', 'lengths','objects'],
+                                'database' : self.database})
             self.dataFetchThread.start()
             self.dataFetchThread.dataFetched.connect(self.updateImage)
 
@@ -357,13 +359,13 @@ class ViewerWindow(QMainWindow):
         pass
 
     def updateImage(self):
-        sys.stdout.write("Image received\n")
-        sys.stdout.flush()
+        #sys.stdout.write("Image received\n")
+        #sys.stdout.flush()
         self.ui.imagePlot.setImage(self.dataFetchThread.getData()['image'], autoLevels=True, autoRange=False)
         self.ui.propertiesView.getPlotItem().plot(self.dataFetchThread.getData()['properties'], clear=True, pen='r')
         self.ui.propertiesView.getPlotItem().plot(self.dataFetchThread.getData()['properties'] + 1, pen='b')
-        sys.stdout.write("Image plotted\n")
-        sys.stdout.flush()
+        #sys.stdout.write("Image plotted\n")
+        #sys.stdout.flush()
         self.dataFetchThread.quit()
         self.dataFetchThread.wait()
         self.dataFetchThread = None
@@ -384,11 +386,12 @@ class dataFetchThread(QThread):
     def run(self):
         # run code and fetch stuff
         sys.stdout.write(f"Image thread to get position: {self.fetch_data['positionNo']} and channelNo: {self.fetch_data['channelNo']} \n")
-        sys.stdout.write(f"{self.fetch_data['dir']}\n")
-        sys.stdout.flush()
+        #sys.stdout.write(f"{self.fetch_data['dir']}\n")
+        #sys.stdout.flush()
         try:
             # fetch all the images that are there in the directory
             # construct image by fetching
+
             if self.fetch_data['type'] == 'phase':
                 directory = self.fetch_data['dir'] / str(self.fetch_data['positionNo']) / "oneMMChannelPhase" / str(self.fetch_data['channelNo'])
             elif self.fetch_data['type'] == 'cellSeg':
@@ -397,6 +400,9 @@ class dataFetchThread(QThread):
             # get 20 images from the last of the stack for display
             fileindices = [int(filename.stem)  for filename in list(directory.glob('*.tiff'))]
             fileindices.sort()
+
+            sys.stdout.write(f"Directory -- {directory}\n")
+            sys.stdout.flush()
 
             if self.fetch_data['show20Images']:
                 fileIndicesToGet = fileindices[-20:]

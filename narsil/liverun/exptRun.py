@@ -768,11 +768,11 @@ class exptRun(object):
                 areas = []
                 lengths = []
                 numobjects = []
-                for i in range(len(props)):
-                    if props[i]['area'] > 64 and props[i]['major_axis_length'] < 200:
-                        areas.append(props[i]['area'])
-                        lengths.append(props[i]['major_axis_length'])
-                        numobjects.append(i)
+                for blob_index in range(len(props)):
+                    #if props[i]['area'] > 64 and props[i]['major_axis_length'] < 200:
+                    areas.append(props[blob_index]['area'])
+                    lengths.append(props[blob_index]['major_axis_length'])
+                    numobjects.append(blob_index)
 
                 channelPropertiesToDatabase = {
                     'position': position,
