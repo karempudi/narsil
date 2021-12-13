@@ -28,7 +28,7 @@ class Ui_ViewerWindow(object):
         if not ViewerWindow.objectName():
             ViewerWindow.setObjectName(u"ViewerWindow")
         ViewerWindow.resize(1577, 736)
-        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(ViewerWindow.sizePolicy().hasHeightForWidth())
@@ -231,7 +231,6 @@ class Ui_ViewerWindow(object):
     # setupUi
 
     def retranslateUi(self, ViewerWindow):
-        ViewerWindow.setWindowTitle(QCoreApplication.translate("ViewerWindow", u"MainWindow", None))
         self.removeButton.setText(QCoreApplication.translate("ViewerWindow", u"Remove", None))
         self.showButton.setText(QCoreApplication.translate("ViewerWindow", u"Show", None))
         self.undoButton.setText(QCoreApplication.translate("ViewerWindow", u"Undo", None))
@@ -257,5 +256,6 @@ class Ui_ViewerWindow(object):
         self.getOnly20Radio.setText(QCoreApplication.translate("ViewerWindow", u"Last 20 images", None))
         self.getAllImagesRadio.setText(QCoreApplication.translate("ViewerWindow", u"All Images", None))
         self.plotPropertiesCheck.setText(QCoreApplication.translate("ViewerWindow", u"Plot Properties", None))
+        pass
     # retranslateUi
 
