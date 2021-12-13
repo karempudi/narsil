@@ -232,7 +232,8 @@ class ViewerWindow(QMainWindow):
                                 'dir': self.saveDir,
                                 'show20Images': numberOfImageToShow,
                                 'properties': ['area', 'lengths','objects'],
-                                'database' : self.database})
+                                'database' : self.database,
+                                'channelWidth': 36})
             self.dataFetchThread.start()
             self.dataFetchThread.dataFetched.connect(self.updateImage)
 
@@ -393,8 +394,8 @@ class dataFetchThread(QThread):
         #sys.stdout.write(f"{self.fetch_data['dir']}\n")
         #sys.stdout.flush()
         try:
-            # fetch all the images that are there in the directory
-            # construct image by fetching
+
+            # Check the database and fetch the properties for plotting
             con = None
             con = pgdatabase.connect(database=self.fetch_data['database']['dbname'], user=self.fetch_data['database']['dbuser'],
                                 password=self.fetch_data['database']['dbpassword'])
@@ -415,11 +416,17 @@ class dataFetchThread(QThread):
                 areas[timepoint] = sum(datapoint[1])
                 lengths[timepoint] = sum(datapoint[2])
                 numobjects[timepoint] = len(datapoint[3])
+            # fetch all the images that are there in the directory
+            # construct image by fetching
 
+            cur.execute("SELECT locations FROM segment WHERE position=%s AND timepoint=%s", (self.fetch_data['positionNo'], 0))
+            channelLocationsData = cur.fetchall()
+            locations = pickle.loads(channelLocationsData[0][0])
+  
             if self.fetch_data['type'] == 'phase':
-                directory = self.fetch_data['dir'] / str(self.fetch_data['positionNo']) / "oneMMChannelPhase" / str(self.fetch_data['channelNo'])
+                directory = self.fetch_data['dir'] / str(self.fetch_data['positionNo']) / "phaseFullImage"
             elif self.fetch_data['type'] == 'cellSeg':
-                directory = self.fetch_data['dir'] / str(self.fetch_data['positionNo']) / "oneMMChannelCellSeg" / str(self.fetch_data['channelNo'])
+                directory = self.fetch_data['dir'] / str(self.fetch_data['positionNo']) / "cellSegmentation" 
 
             # get 20 images from the last of the stack for display
             fileindices = [int(filename.stem)  for filename in list(directory.glob('*.tiff'))]
@@ -436,10 +443,16 @@ class dataFetchThread(QThread):
             files = [ directory / (str(i) + '.tiff') for i in fileIndicesToGet]
 
             number_images = len(files)
+            singleChannelLocation = locations[self.fetch_data['channelNo']]
+            channelWidth = self.fetch_data['channelWidth'] // 2
             if len(files) > 0:
-                image = io.imread(files[0])
+
+                image = io.imread(files[0])[:,
+                            singleChannelLocation - channelWidth: singleChannelLocation + channelWidth]
                 for i in range(1, number_images):
-                    image = np.concatenate((image, io.imread(files[i])), axis = 1)
+                    image_slice = io.imread(files[i])[:,
+                            singleChannelLocation - channelWidth: singleChannelLocation + channelWidth]
+                    image = np.concatenate((image, image_slice), axis = 1)
                 
                 self.data = {
                     'image': image,
