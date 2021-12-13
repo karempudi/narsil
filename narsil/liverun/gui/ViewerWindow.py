@@ -35,12 +35,8 @@ class ViewerWindow(QMainWindow):
         self.database = database
 
         # thread object that will fetch images
-        self.imageFetchThread = None
-        self.imgThreadRunning = False
-
-        # thread object that will fetch properties
-        self.propFetchThread = None
-        self.propFetchRunning = False
+        self.dataFetchThread = None
+        self.dataThreadRunning = False
 
         self.currentPosition = None
         self.positionNoValidator = QIntValidator(0, 10000, self.ui.positionNoLine)
@@ -221,27 +217,19 @@ class ViewerWindow(QMainWindow):
     def fetchData(self):
         # create a thread and call to get the data, once the data fetching
         # is done call the plotter
-        sys.stdout.write("Fetch Button clicked\n")
-        sys.stdout.flush()
+        #sys.stdout.write("Fetch Button clicked\n")
+        #sys.stdout.flush()
         imgType = 'phase' if self.showPhase else 'cellSeg'
         numberOfImageToShow = True if self.show20Images else False
 
-        if self.imageFetchThread is None:
-            self.imageFetchThread =  ImageFetchThread({'positionNo': self.currentPosition, 
+        if self.dataFetchThread is None:
+            self.dataFetchThread =  dataFetchThread({'positionNo': self.currentPosition, 
                                 'channelNo': self.currentChannelNo,
                                 'type': imgType,
                                 'dir': self.saveDir,
                                 'show20Images': numberOfImageToShow})
-            self.imageFetchThread.start()
-            self.imageFetchThread.dataFetched.connect(self.updateImage)
-        
-        if self.propFetchThread is None:
-            self.propFetchThread = propertiesFetchThread({
-
-                            })
-            self.propFetchThread.start()
-            self.propFetchThread.dataFetched.connect(self.updatePlots)
-        
+            self.dataFetchThread.start()
+            self.dataFetchThread.dataFetched.connect(self.updateImage)
 
     def setRollingWindow(self):
         rollingWindow = self.ui.windowLengthLine.text()
@@ -371,62 +359,25 @@ class ViewerWindow(QMainWindow):
     def updateImage(self):
         sys.stdout.write("Image received\n")
         sys.stdout.flush()
-        self.ui.imagePlot.setImage(self.imageFetchThread.getData(), autoLevels=True, autoRange=False)
+        self.ui.imagePlot.setImage(self.dataFetchThread.getData()['image'], autoLevels=True, autoRange=False)
+        self.ui.propertiesView.getPlotItem().plot(self.dataFetchThread.getData()['properties'], clear=True, pen='r')
+        self.ui.propertiesView.getPlotItem().plot(self.dataFetchThread.getData()['properties'] + 1, pen='b')
         sys.stdout.write("Image plotted\n")
         sys.stdout.flush()
-        self.imageFetchThread.quit()
-        self.imageFetchThread.wait()
-        self.imageFetchThread = None
+        self.dataFetchThread.quit()
+        self.dataFetchThread.wait()
+        self.dataFetchThread = None
+        return None
     
-    def updatePlots(self):
-        sys.stdout.write("Properties data received\n")
-        sys.stdout.flush()
-        self.plot = self.ui.propertiesView.getPlotItem()
-        self.plot.clear()
-        self.plot.setLabel('bottom', text='Frame Number')
-        if self.propFetchThread.data is None:
-            sys.stdout.write("BOOOM BOOOM BOOOM\n")
-            sys.stdout.flush()
-        self.plot.plot(self.propFetchThread.data, pen='r')
-        self.propFetchThread.quit()
-        self.propFetchThread.wait()
-        self.propFetchThread = None
 
-class propertiesFetchThread(QThread):
+        
+
+class dataFetchThread(QThread):
 
     dataFetched = Signal()
 
     def __init__(self, fetch_data):
-        super(propertiesFetchThread, self).__init__()
-        self.fetch_data = fetch_data
-        self.data = None
-
-    def run(self):
-
-        try:
-            # connect to database and get stuff to plot the areas, lengths
-            con = None
-        
-        except:
-            pass
-
-        finally:
-            self.data = np.random.normal(size=(1000,))
-        
-        sys.stdout.write(f"Fetched properties ---- \n")
-        sys.stdout.flush()
-
-        self.dataFetched.emit()
-
-    def getData(self):
-        return self.data
-
-class ImageFetchThread(QThread):
-
-    dataFetched = Signal()
-
-    def __init__(self, fetch_data):
-        super(ImageFetchThread, self).__init__()
+        super(dataFetchThread, self).__init__()
         self.fetch_data = fetch_data
         self.data = None
 
@@ -460,7 +411,10 @@ class ImageFetchThread(QThread):
                 for i in range(1, number_images):
                     image = np.concatenate((image, io.imread(files[i])), axis = 1)
                 
-                self.data = image
+                self.data = {
+                    'image': image,
+                    'properties': np.random.normal(loc=0.0, scale=1.0, size=(100,))
+                }
 
                 sys.stdout.write(f"Image shape: {image.shape}\n")
                 sys.stdout.flush()
@@ -470,7 +424,8 @@ class ImageFetchThread(QThread):
         except Exception as e:
             sys.stdout.write(f"Data couldnot be fetched : {e}\n")
             sys.stdout.flush()
-            self.data = np.random.normal(loc=0.0, scale=1.0, size=(100, 100))
+            self.data =  {'image' : np.random.normal(loc=0.0, scale=1.0, size=(100, 100)),
+                            'properties': np.random.norma(loc=0.0, scale=1.0, size=(100,))}
 
         #self.data = np.random.normal(loc=0.0, scale=1.0, size=(100, 100))
 
