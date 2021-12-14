@@ -59,15 +59,10 @@ class Ui_ViewerWindow(object):
         self.formLayout = QFormLayout(self.formLayoutWidget)
         self.formLayout.setObjectName(u"formLayout")
         self.formLayout.setContentsMargins(0, 0, 0, 0)
-        self.windowLengthLabel = QLabel(self.formLayoutWidget)
-        self.windowLengthLabel.setObjectName(u"windowLengthLabel")
+        self.startingFrameLabel = QLabel(self.formLayoutWidget)
+        self.startingFrameLabel.setObjectName(u"startingFrameLabel")
 
-        self.formLayout.setWidget(0, QFormLayout.LabelRole, self.windowLengthLabel)
-
-        self.windowLengthLine = QLineEdit(self.formLayoutWidget)
-        self.windowLengthLine.setObjectName(u"windowLengthLine")
-
-        self.formLayout.setWidget(0, QFormLayout.FieldRole, self.windowLengthLine)
+        self.formLayout.setWidget(0, QFormLayout.LabelRole, self.startingFrameLabel)
 
         self.areaLabel = QLabel(self.formLayoutWidget)
         self.areaLabel.setObjectName(u"areaLabel")
@@ -85,11 +80,11 @@ class Ui_ViewerWindow(object):
 
         self.formLayout.setWidget(1, QFormLayout.FieldRole, self.areaSlider)
 
-        self.lengthSlider = QSlider(self.formLayoutWidget)
-        self.lengthSlider.setObjectName(u"lengthSlider")
-        self.lengthSlider.setOrientation(Qt.Horizontal)
+        self.fractionSlider = QSlider(self.formLayoutWidget)
+        self.fractionSlider.setObjectName(u"fractionSlider")
+        self.fractionSlider.setOrientation(Qt.Horizontal)
 
-        self.formLayout.setWidget(2, QFormLayout.FieldRole, self.lengthSlider)
+        self.formLayout.setWidget(2, QFormLayout.FieldRole, self.fractionSlider)
 
         self.cellObjectsLabel = QLabel(self.formLayoutWidget)
         self.cellObjectsLabel.setObjectName(u"cellObjectsLabel")
@@ -101,6 +96,12 @@ class Ui_ViewerWindow(object):
         self.cellObjectsSlider.setOrientation(Qt.Horizontal)
 
         self.formLayout.setWidget(3, QFormLayout.FieldRole, self.cellObjectsSlider)
+
+        self.frameSlider = QSlider(self.formLayoutWidget)
+        self.frameSlider.setObjectName(u"frameSlider")
+        self.frameSlider.setOrientation(Qt.Horizontal)
+
+        self.formLayout.setWidget(0, QFormLayout.FieldRole, self.frameSlider)
 
         self.nextAutoButton = QPushButton(self.centralwidget)
         self.nextAutoButton.setObjectName(u"nextAutoButton")
@@ -236,9 +237,9 @@ class Ui_ViewerWindow(object):
         self.undoButton.setText(QCoreApplication.translate("ViewerWindow", u"Undo", None))
         self.resetButton.setText(QCoreApplication.translate("ViewerWindow", u"Reset", None))
         self.filterParametersBox.setTitle(QCoreApplication.translate("ViewerWindow", u"Filter Parameters", None))
-        self.windowLengthLabel.setText(QCoreApplication.translate("ViewerWindow", u"Rolling window Length", None))
+        self.startingFrameLabel.setText(QCoreApplication.translate("ViewerWindow", u"Starting Frame No", None))
         self.areaLabel.setText(QCoreApplication.translate("ViewerWindow", u"Area Threshold", None))
-        self.lengthLabel.setText(QCoreApplication.translate("ViewerWindow", u"Length Threshold", None))
+        self.lengthLabel.setText(QCoreApplication.translate("ViewerWindow", u"Fraction", None))
         self.cellObjectsLabel.setText(QCoreApplication.translate("ViewerWindow", u"No of Cell like objects", None))
         self.nextAutoButton.setText(QCoreApplication.translate("ViewerWindow", u"Next Auto", None))
         self.sendTweezePositionsButton.setText(QCoreApplication.translate("ViewerWindow", u"Send Tweeze Positions", None))

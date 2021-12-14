@@ -242,10 +242,14 @@ class MainWindow(QMainWindow):
                 else:
                     sys.stdout.write(f"Database setup not found\n")
                     sys.stdout.flush()
+                
+                sys.stdout.write(f"Setup loaded from file: {filename[0]}\n")
+                sys.stdout.flush()
 
             except Exception as e:
                 sys.stdout.write(f"Error in loading setup -- {e}\n")
                 sys.stdout.flush()
+        
 
     
     ############ controls button handlers ##################

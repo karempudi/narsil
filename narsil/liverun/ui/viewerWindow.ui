@@ -102,14 +102,11 @@
      </property>
      <layout class="QFormLayout" name="formLayout">
       <item row="0" column="0">
-       <widget class="QLabel" name="windowLengthLabel">
+       <widget class="QLabel" name="startingFrameLabel">
         <property name="text">
-         <string>Rolling window Length</string>
+         <string>Starting Frame No</string>
         </property>
        </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QLineEdit" name="windowLengthLine"/>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="areaLabel">
@@ -121,7 +118,7 @@
       <item row="2" column="0">
        <widget class="QLabel" name="lengthLabel">
         <property name="text">
-         <string>Length Threshold</string>
+         <string>Fraction</string>
         </property>
        </widget>
       </item>
@@ -133,7 +130,7 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QSlider" name="lengthSlider">
+       <widget class="QSlider" name="fractionSlider">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -148,6 +145,13 @@
       </item>
       <item row="3" column="1">
        <widget class="QSlider" name="cellObjectsSlider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QSlider" name="frameSlider">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>

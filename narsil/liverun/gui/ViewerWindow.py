@@ -62,14 +62,17 @@ class ViewerWindow(QMainWindow):
         self.tweezePositions = []
 
 
-        self.rollingWindow = None
-        self.rollingWindowValidator = QIntValidator(0, 99, self.ui.windowLengthLine)
         self.areaThreshold = None
         self.lengthThreshold = None
         self.noCellObjects = None
 
         self.sentPositions = []
 
+        # filter parameters
+        self.areaCutoff = None
+        self.timepointCutoff = None
+        self.numBlobsCutoff = None
+        self.fraction = None
 
         self.setupButtonHandlers()
     
@@ -109,20 +112,29 @@ class ViewerWindow(QMainWindow):
         # set expt running options useful for not doing database connections over and over again
         self.ui.isExptRunning.toggled.connect(self.setExptRunning)
 
-        # rolling window width
-        self.ui.windowLengthLine.setValidator(self.rollingWindowValidator)
-        self.ui.windowLengthLine.textChanged.connect(self.setRollingWindow)
 
         # area threshold slider handler
+        self.ui.areaSlider.setMinimum(0)
+        self.ui.areaSlider.setMaximum(6000)
+        self.ui.areaSlider.valueChanged.connect(self.setAreaCutoff)
 
-        # length threshold slider handler
+        # fraction slider handler
+        self.ui.fractionSlider.setMinimum(0)
+        self.ui.fractionSlider.setMaximum(100)
+        self.ui.fractionSlider.valueChanged.connect(self.setFraction)
 
         # no of cell like objects slider
+        self.ui.cellObjectsSlider.setMinimum(0)
+        self.ui.cellObjectsSlider.setMaximum(20)
+        self.ui.cellObjectsSlider.valueChanged.connect(self.setNumBlobsCutoff)
 
-        # Update filter parameters button
+        # time point slider 
+        self.ui.frameSlider.setMinimum(0)
+        self.ui.frameSlider.setMaximum(100)
+        self.ui.frameSlider.valueChanged.connect(self.setTimepointCutoff)
 
         # find all tweezalbe channels button
-        self.ui.findLocationsButton.clicked.connect(self.getAllLocationsFake)
+        self.ui.findLocationsButton.clicked.connect(self.getAllLocations)
 
 
         # hook up if the selection changed
@@ -249,6 +261,64 @@ class ViewerWindow(QMainWindow):
         sys.stdout.write(f"Rolling window length : {self.rollingWindow}\n")
         sys.stdout.flush()
 
+    def setAreaCutoff(self, value):
+        self.areaCutoff = value
+        sys.stdout.write(f"Area cutoff changed to: {value}\n")
+        sys.stdout.flush()
+    
+    def setFraction(self, value):
+        self.fraction = float(value) / 100.0
+        sys.stdout.write(f"Fraction set to: {value/100.0}\n")
+        sys.stdout.flush()
+
+    def setTimepointCutoff(self, value):
+        self.timepointCutoff = value
+        sys.stdout.write(f"Timepoint cutoff: {value}\n")
+        sys.stdout.flush()
+
+    def setNumBlobsCutoff(self, value):
+        self.numBlobsCutoff = value
+        sys.stdout.write(f"Num of blobs cutoff: {value}\n")
+        sys.stdout.flush()
+
+    def getAllLocations(self, clicked):
+        # loop through the database and create a list of positions based on filters 
+        # that are set
+        # check if all the filters are not None then fetch from database and apply filters 
+        # and then generate list of active positions
+        if self.databaseOk:
+            sys.stdout.write(f"Grabbing all possible tweezable channels\n")
+            sys.stdout.flush()
+
+            try:
+                con = None
+                con = pgdatabase.connect(database=self.database['dbname'], user=self.database['dbuser'],
+                                    password=self.database['dbpassword'])
+                con.autocommit = True
+                cur = con.cursor()
+                cur.execute("SELECT * FROM growth")
+                data = cur.fetchall()
+
+                sorted_data = sorted(data, key=lambda element: element[0])
+
+                formatted_data = [ (datapoint[0], datapoint[2], datapoint[3], datapoint[4], 
+                                pickle.loads(datapoint[5]), pickle.loads(datapoint[6]), pickle.loads(datapoint[7])) 
+                                for datapoint in sorted_data]
+                sys.stdout.write(f"Length of data : {len(formatted_data)}\n")
+                sys.stdout.flush()
+            
+            except Exception as e:
+                sys.stdout.write(f"Error in finding all tweezable positions -- {e}\n")
+                sys.stdout.flush()
+            
+            finally:
+                if con:
+                    con.close()
+        
+        else:
+            sys.stdout.write(f"Database not found\n")
+            sys.stdout.flush()
+
 
     def getAllLocationsFake(self, clicked):
         # populate the list widget will all possible locations
@@ -358,9 +428,6 @@ class ViewerWindow(QMainWindow):
     def sendTweezableToMain(self, clicked):
         pass
 
-    def getAllLocations(self):
-        # populate the list widget with possible tweeze locations
-        pass
 
     def updateImage(self):
         #sys.stdout.write("Image received\n")
