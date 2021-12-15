@@ -166,10 +166,10 @@ def parsePositionsFile(positionFileName, version=2):
 
 				deviceData = item[devicePositions][array]
 				for eachDeviceData in deviceData:
-					if eachDeviceData['Device']['scalar'] == 'XYStage':
+					if eachDeviceData['Device']['scalar'] == 'TIXYDrive':
 						x_coordiate = eachDeviceData[position_um][array][x]
 						y_coordinate = eachDeviceData[position_um][array][y]
-					elif eachDeviceData['Device']['scalar'] == 'PFSOffset':
+					elif eachDeviceData['Device']['scalar'] == 'TIPFSOffset':
 						pfs_offset = eachDeviceData[position_um][array][x]
 				
 				positionsData[item[label][scalar]] = {'x_coordinate': x_coordiate,
