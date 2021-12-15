@@ -13,7 +13,7 @@ from pathlib import Path
 from functools import partial
 from torchvision import transforms, utils
 from queue import Empty
-from pycromanager import Acquisition
+from pycromanager import Acquisition, Bridge
 from narsil.liverun.utils import queueDataset, resizeOneImage, tensorizeOneImage, normalize
 from datetime import datetime
 from torch.utils.data import DataLoader, Dataset
@@ -251,14 +251,15 @@ class exptRun(object):
         if not self.acquireKillEvent.is_set():
             core = bridge.get_core()
             core.full_focus()
+            #print(event)
             return event
         else:
             core = bridge.get_core()
             core.stop_sequence_acquisition()
-            event_queue.clear()
+            core.stop()
+            event_queue.queue.clear()
             event_queue.put(None)
-
-
+        
     # fake acquiring outside to test positions  
     def acquireFake(self):
         #self.loadNets()
@@ -300,12 +301,12 @@ class exptRun(object):
 
     def acquire(self):
 
-        with Acquisition(image_process_fn=partial(self.putImagesInSegQueue), debug=False) as acq:
+        with Acquisition(image_process_fn=partial(self.putImagesInSegQueue), post_hardware_hook_fn=self.waitForPFS, debug=False) as acq:
             acq.acquire(self.acquireEvents)
 
         while not self.acquireKillEvent.is_set():
             try:
-                time.sleep(2)
+                time.sleep(10)
             except KeyboardInterrupt:
                 self.acquireKillEvent.set()
                 sys.stdout.write("Acquire process interrupted using keyboard\n")
@@ -866,16 +867,16 @@ def runProcesses(exptRunObject):
     except:
         pass
     exptRunObject.acquireKillEvent.clear()
-    acquireProcess = mp.Process(target=exptRunObject.acquireFake, name='Acquire Process')
+    acquireProcess = mp.Process(target=exptRunObject.acquire, name='Acquire Process')
     acquireProcess.start()
 
-    exptRunObject.segmentKillEvent.clear()
-    segmentProcess = mp.Process(target=exptRunObject.segment, name='Segment Process')
-    segmentProcess.start()
+    #exptRunObject.segmentKillEvent.clear()
+    #segmentProcess = mp.Process(target=exptRunObject.segment, name='Segment Process')
+    #segmentProcess.start()
 
-    exptRunObject.writeKillEvent.clear()
-    writeProcess = mp.Process(target=exptRunObject.properties, name='Propertis write Process')
-    writeProcess.start()
+    #exptRunObject.writeKillEvent.clear()
+    #writeProcess = mp.Process(target=exptRunObject.properties, name='Propertis write Process')
+    #writeProcess.start()
 
 # In the datasets image names are img_000000000.tiff format.
 def imgFilenameFromNumber(number):

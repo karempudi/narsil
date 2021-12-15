@@ -73,14 +73,7 @@ class LiveWindow(QMainWindow):
 
         self.acquiring = False
         self.imgAcquireThread = None
-        try:
-            self.bridge = Bridge()
-            self.core = self.bridge.get_core()
-            self.height = self.core.get_image_height()
-            self.width = self.core.get_image_width()
-        except:
-            sys.stdout.write(f"Micromanager couldn't be connected\n")
-            sys.stdout.flush()
+     
         self.setupButtonHandlers()
 
         self.ui.liveImageGraphics.ui.histogram.hide()
@@ -165,8 +158,8 @@ class LiveWindow(QMainWindow):
         sys.stdout.write(f"Nets loaded on device\n")
         sys.stdout.flush()
 
-        #self.timer.timeout.connect(self.grabImage)
-        self.timer.timeout.connect(self.grabImageFake)
+        self.timer.timeout.connect(self.grabImage)
+        #self.timer.timeout.connect(self.grabImageFake)
         self.timer.start()
 
     def grabImageFake(self):
@@ -221,7 +214,9 @@ class LiveWindow(QMainWindow):
 
     def grabImage(self):
         try:
-            self.imgAcquireThread = LiveImageFetch(self.core)
+            bridge = Bridge()
+            core = bridge.get_core()
+            self.imgAcquireThread = LiveImageFetch(core)
             self.imgAcquireThread.dataFetched.connect(self.updateImage)
             self.imgAcquireThread.start()
 
@@ -261,9 +256,6 @@ class LiveWindow(QMainWindow):
             self.ui.liveImageGraphics.setImage(self.imgAcquireThread.data.T, autoLevels=True, autoRange=False)
             sys.stdout.write(f"Image plotted : {self.imgAcquireThread.data.shape}\n")
             sys.stdout.flush()
-            self.imgAcquireThread.quit()
-            self.imgAcquireThread.wait()
-            self.imgAcquireThread =  None
 
 def processImage(image):
 
