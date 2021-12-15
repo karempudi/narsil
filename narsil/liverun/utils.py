@@ -148,16 +148,12 @@ def parsePositionsFile(positionFileName, version=2):
 
 	if version == 2:
 
-		pfsDeviceIndex = 0
-		XYStageIndex = 1
 		mapping = "map"
 		stagePositions = "StagePositions"
 		array = "array"
 		label = "Label"
 		devicePositions = "DevicePositions"
 		position_um = "Position_um"
-		pfsDevice = pfsDeviceIndex
-		xyDevice = XYStageIndex
 		x = 0
 		y = 1
 		scalar = "scalar"
@@ -167,9 +163,18 @@ def parsePositionsFile(positionFileName, version=2):
 			data = json.load(json_file)
 			
 			for item in data[mapping][stagePositions][array]:
-				positionsData[item[label][scalar]] = {'x_coordinate': item[devicePositions][array][xyDevice][position_um][array][x],
-					'y_coordinate': item[devicePositions][array][xyDevice][position_um][array][y],
-					'pfs_offset': item[devicePositions][array][pfsDevice][position_um][array][x]
+
+				deviceData = item[devicePositions][array]
+				for eachDeviceData in deviceData:
+					if eachDeviceData['Device']['scalar'] == 'XYStage':
+						x_coordiate = eachDeviceData[position_um][array][x]
+						y_coordinate = eachDeviceData[position_um][array][y]
+					elif eachDeviceData['Device']['scalar'] == 'PFSOffset':
+						pfs_offset = eachDeviceData[position_um][array][x]
+				
+				positionsData[item[label][scalar]] = {'x_coordinate': x_coordiate,
+					'y_coordinate': y_coordinate,
+					'pfs_offset': pfs_offset
 				}
 
 		sorted_data = dict(sorted(positionsData.items(), key=lambda kv: int(kv[0][3:])))
@@ -234,7 +239,7 @@ def getPositionList(filename=None, version=2):
         positions = {}
         for i in range(20):
             positions['Pos' + str(i)] = {'x_coordinate':0, 'y_coordinate': 0, 'pfs_offset': 0}
-        return positions
+        return None
     else:
         positions = parsePositionsFile(filename, version)
         return positions
