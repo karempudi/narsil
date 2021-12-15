@@ -253,12 +253,6 @@ class exptRun(object):
             core.full_focus()
             #print(event)
             return event
-        else:
-            core = bridge.get_core()
-            core.stop_sequence_acquisition()
-            core.stop()
-            event_queue.queue.clear()
-            event_queue.put(None)
         
     # fake acquiring outside to test positions  
     def acquireFake(self):
@@ -301,8 +295,18 @@ class exptRun(object):
 
     def acquire(self):
 
-        with Acquisition(image_process_fn=partial(self.putImagesInSegQueue), post_hardware_hook_fn=self.waitForPFS, debug=False) as acq:
-            acq.acquire(self.acquireEvents)
+        numPositions = 4
+        sleepTime = 30 # time to sleep between timepoints
+        for i, event in enumerate(self.acquireEvents, 1):
+            with Acquisition(image_process_fn=partial(self.putImagesInSegQueue), post_hardware_hook_fn=self.waitForPFS, debug=False) as acq:
+                if not self.acquireKillEvent.is_set():
+                    acq.acquire(event)
+                # hackish
+                else:
+                    break
+            if i % numPositions == 0:
+                time.sleep(sleepTime)
+                
 
         while not self.acquireKillEvent.is_set():
             try:
