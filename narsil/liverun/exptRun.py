@@ -295,8 +295,8 @@ class exptRun(object):
 
     def acquire(self):
 
-        numPositions = 4
-        sleepTime = 30 # time to sleep between timepoints
+        numPositions = 40
+        sleepTime = 20 # time to sleep between timepoints
         for i, event in enumerate(self.acquireEvents, 1):
             with Acquisition(image_process_fn=partial(self.putImagesInSegQueue), post_hardware_hook_fn=self.waitForPFS, debug=False) as acq:
                 if not self.acquireKillEvent.is_set():
@@ -310,7 +310,7 @@ class exptRun(object):
 
         while not self.acquireKillEvent.is_set():
             try:
-                time.sleep(10)
+                time.sleep(3)
             except KeyboardInterrupt:
                 self.acquireKillEvent.set()
                 sys.stdout.write("Acquire process interrupted using keyboard\n")
