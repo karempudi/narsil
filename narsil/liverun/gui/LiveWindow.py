@@ -165,7 +165,8 @@ class LiveWindow(QMainWindow):
         sys.stdout.write(f"Nets loaded on device\n")
         sys.stdout.flush()
 
-        self.timer.timeout.connect(self.grabImage)
+        #self.timer.timeout.connect(self.grabImage)
+        self.timer.timeout.connect(self.grabImageFake)
         self.timer.start()
 
     def grabImageFake(self):
@@ -260,6 +261,9 @@ class LiveWindow(QMainWindow):
             self.ui.liveImageGraphics.setImage(self.imgAcquireThread.data.T, autoLevels=True, autoRange=False)
             sys.stdout.write(f"Image plotted : {self.imgAcquireThread.data.shape}\n")
             sys.stdout.flush()
+            self.imgAcquireThread.quit()
+            self.imgAcquireThread.wait()
+            self.imgAcquireThread =  None
 
 def processImage(image):
 

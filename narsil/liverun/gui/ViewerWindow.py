@@ -135,6 +135,7 @@ class ViewerWindow(QMainWindow):
 
         # find all tweezalbe channels button
         self.ui.findLocationsButton.clicked.connect(self.getAllLocations)
+        #self.ui.findLocationsButton.clicked.connect(self.getAllLocationsFake)
 
 
         # hook up if the selection changed
@@ -290,6 +291,9 @@ class ViewerWindow(QMainWindow):
             sys.stdout.write(f"Grabbing all possible tweezable channels\n")
             sys.stdout.flush()
 
+            self.activePositions.clear()
+            self.ui.activePositionsList.clear()            
+
             try:
                 con = None
                 con = pgdatabase.connect(database=self.database['dbname'], user=self.database['dbuser'],
@@ -301,11 +305,34 @@ class ViewerWindow(QMainWindow):
 
                 sorted_data = sorted(data, key=lambda element: element[0])
 
-                formatted_data = [ (datapoint[0], datapoint[2], datapoint[3], datapoint[4], 
-                                pickle.loads(datapoint[5]), pickle.loads(datapoint[6]), pickle.loads(datapoint[7])) 
+                formatted_data = [ [datapoint[0], datapoint[2], datapoint[3], datapoint[4], 
+                                sum(pickle.loads(datapoint[5])), sum(pickle.loads(datapoint[6])), len(pickle.loads(datapoint[7]))]
                                 for datapoint in sorted_data]
+                
+                data_numpy = np.asarray(formatted_data)
+                num_positions = int(np.max(data_numpy[:, 1])) + 1
+                max_channels = int(np.max(data_numpy[:, 3])) + 1
+
+                for pos in range(num_positions):
+                    for channel in range(max_channels):
+                        pos_channel_data = data_numpy[np.argwhere(np.logical_and(data_numpy[:, 1] == pos, data_numpy[:, 3] == channel))]
+                        #print(f"Pos: {pos} -- channelno: {channel} -- data: {len(pos_channel_data)}")
+                        # sort the data by time and apply filters and select positions
+                        pos_channel_data_list = pos_channel_data.squeeze(1).tolist()
+                        channel_data = np.asarray(sorted(pos_channel_data_list, key=lambda element: element[2]))
+                        
+                        area_fraction = np.sum(channel_data[self.timepointCutoff:, 4] > self.areaCutoff)/ channel_data.shape[0]
+                        blobs_fraction = np.sum(channel_data[self.timepointCutoff:, 6] > self.numBlobsCutoff)/ channel_data.shape[0]
+                        
+                        #print(blobs_fraction)
+                        if area_fraction > self.fraction and blobs_fraction > self.fraction:
+                            self.activePositions.append((pos, channel))
+                            item = "Pos: " + str(pos) + " Ch: " + str(channel)
+                            self.ui.activePositionsList.addItem(item)
+
                 sys.stdout.write(f"Length of data : {len(formatted_data)}\n")
                 sys.stdout.flush()
+
             
             except Exception as e:
                 sys.stdout.write(f"Error in finding all tweezable positions -- {e}\n")
@@ -322,6 +349,9 @@ class ViewerWindow(QMainWindow):
 
     def getAllLocationsFake(self, clicked):
         # populate the list widget will all possible locations
+
+        self.ui.activePositionsList.clear()
+        self.activePositions.clear()
         position = 3
         for channelNo in range(0, 100):
             item = "Pos: "  + str(position) + " Ch: " + str(channelNo)
